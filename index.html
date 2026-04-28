@@ -601,7 +601,7 @@ function calc() {
   $('speltAmt').innerHTML = r1(dinkelG)    + ' <span>g</span>';
   $('watAmt').innerHTML  = r1(waterAdded) + ' <span>g</span>';
   $('lvAmt').innerHTML   = r1(surdegG)    + ' <span>g</span>';
-  $('sAmt').innerHTML    = saltG.toFixed(1) + ' <span>g</span>';
+  $('sAmt').innerHTML    = (roundMode ? r1(saltG) : saltG.toFixed(1)) + ' <span>g</span>';
   $('total').textContent = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
   $('lvPct').textContent  = surdegPct.toFixed(1);
