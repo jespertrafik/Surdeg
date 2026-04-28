@@ -533,7 +533,7 @@
     </div>
     <div class="meta">
       <div>Bulkmål <span id="factor">—</span>× · surdeg <span id="lvPct">—</span>%</div>
-      <div style="margin-top:6px;font-size:9px;opacity:0.7">Totaler — surdegens mjöl/vatten ingår</div>
+      <div style="margin-top:6px;font-size:9px;opacity:0.7">Mjöl + vatten = nettomängd att tillsätta utöver surdegen</div>
     </div>
   </div>
 </div>
@@ -590,12 +590,19 @@ function calc() {
   const speltG = (d/100) * F;
   const manTotal = F - speltG;
 
+  // Surdeg @ 100% hydrering = halva mjöl, halva vatten — dra bort från totaler
+  // så att summan av ingrediensraderna = degvikt
+  const levainFlour = levainW / 2;
+  const levainWater = levainW / 2;
+  const manNet = manTotal - levainFlour;
+  const watNet = totalWater - levainWater;
+
   const r5 = n => Math.round(n / 5) * 5;
   const r1 = n => Math.round(n);
 
-  const manR = r5(manTotal);
+  const manR = r5(manNet);
   const speltR = r5(speltG);
-  const watR = r5(totalWater);
+  const watR = r5(watNet);
   const lvR = r5(levainW);
   const saltR = r1(saltG);
   const totalR = r5(F + totalWater + saltG);
