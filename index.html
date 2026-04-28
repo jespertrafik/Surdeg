@@ -164,6 +164,88 @@
     color: var(--ink);
   }
   input[type="number"]:focus { outline: none; border-color: var(--accent); }
+  .vol-stepper {
+    display: grid;
+    grid-template-columns: 64px 1fr 64px;
+    gap: 10px;
+    align-items: stretch;
+    margin-bottom: 12px;
+  }
+  .step-btn {
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.08s, background 0.15s;
+    box-shadow: 0 2px 6px rgba(43,31,21,0.15);
+  }
+  .step-btn:active { transform: scale(0.94); background: var(--accent); }
+  .vol-display {
+    position: relative;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+  }
+  .vol-display input[type="number"] {
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 38px;
+    font-weight: 600;
+    padding: 14px 0;
+    width: 100%;
+    color: var(--ink);
+    -moz-appearance: textfield;
+  }
+  .vol-display input[type="number"]::-webkit-outer-spin-button,
+  .vol-display input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .vol-display input[type="number"]:focus { outline: none; }
+  .vol-unit {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-left: 6px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .vol-presets {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .preset-btn {
+    padding: 10px 0;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+  .preset-btn:active { transform: scale(0.96); }
+  .preset-btn.active {
+    background: var(--accent);
+    color: var(--bg-card);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
   input[type="range"] {
     -webkit-appearance: none;
     width: 100%;
@@ -290,8 +372,20 @@
 
   <div class="card">
     <div class="card-title">Önskad volym efter bulk</div>
-    <div class="field">
-      <input type="number" id="volume" value="2000" min="100" step="50">
+    <div class="vol-stepper">
+      <button class="step-btn" id="volMinus" aria-label="Minska volym" type="button">−</button>
+      <div class="vol-display">
+        <input type="number" id="volume" value="2000" min="100" step="50" inputmode="numeric">
+        <span class="vol-unit">ml</span>
+      </div>
+      <button class="step-btn" id="volPlus" aria-label="Öka volym" type="button">+</button>
+    </div>
+    <div class="vol-presets">
+      <button class="preset-btn" data-vol="1000" type="button">1000</button>
+      <button class="preset-btn" data-vol="1500" type="button">1500</button>
+      <button class="preset-btn" data-vol="2000" type="button">2000</button>
+      <button class="preset-btn" data-vol="2500" type="button">2500</button>
+      <button class="preset-btn" data-vol="3000" type="button">3000</button>
     </div>
     <div class="note" id="volNote">Baguette: full degvolym. Rakt i kyl efter bulk.</div>
   </div>
@@ -448,6 +542,32 @@ document.querySelectorAll('.mode button').forEach(btn => {
 });
 
 ['volume','bt','kt','h','d'].forEach(id => $(id).addEventListener('input', calc));
+
+const VOL_STEP = 50;
+const VOL_MIN = 100;
+const VOL_MAX = 10000;
+
+function setVolume(v) {
+  v = Math.max(VOL_MIN, Math.min(VOL_MAX, Math.round(v / VOL_STEP) * VOL_STEP));
+  $('volume').value = v;
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.vol === v);
+  });
+  calc();
+}
+
+$('volMinus').addEventListener('click', () => setVolume((+$('volume').value || 0) - VOL_STEP));
+$('volPlus').addEventListener('click', () => setVolume((+$('volume').value || 0) + VOL_STEP));
+$('volume').addEventListener('input', () => {
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.vol === +$('volume').value);
+  });
+});
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => setVolume(+btn.dataset.vol));
+});
+
+setVolume(+$('volume').value);
 calc();
 </script>
 </body>
