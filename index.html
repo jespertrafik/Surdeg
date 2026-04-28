@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surdegskalkylator</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4ede0;
+    --bg-card: #faf6ec;
+    --ink: #2b1f15;
+    --ink-soft: #6b5a48;
+    --accent: #a8421f;
+    --line: #d9cdb8;
+    --crust: #c8975a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Fraunces', Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(168,66,31,0.06) 0, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(200,151,90,0.08) 0, transparent 50%);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 20px 16px 60px;
+    line-height: 1.4;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; }
+  header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  h1 {
+    font-weight: 300;
+    font-size: 32px;
+    letter-spacing: -0.02em;
+    font-style: italic;
+  }
+  .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-top: 4px;
+  }
+  .mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-bottom: 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .mode button {
+    padding: 14px;
+    background: transparent;
+    border: none;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-style: italic;
+  }
+  .mode button.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  label { font-size: 15px; font-weight: 500; }
+  .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  input[type="number"]:focus { outline: none; border-color: var(--accent); }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--line);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid var(--bg-card);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px; height: 22px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid var(--bg-card);
+  }
+  .recipe {
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 4px;
+    padding: 22px 18px;
+  }
+  .recipe-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--crust);
+    margin-bottom: 16px;
+  }
+  .ingr {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 11px 0;
+    border-bottom: 1px dashed rgba(244,237,224,0.15);
+  }
+  .ingr:last-of-type { border-bottom: none; }
+  .ingr-name { font-size: 16px; font-weight: 500; }
+  .ingr-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .ingr-amt span {
+    font-size: 12px;
+    color: var(--crust);
+    margin-left: 3px;
+    font-weight: 400;
+  }
+  .total {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(244,237,224,0.25);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .total-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--crust);
+  }
+  .total-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .meta {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed rgba(244,237,224,0.15);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(244,237,224,0.55);
+    text-align: center;
+    letter-spacing: 0.08em;
+    line-height: 1.9;
+  }
+  .meta span { color: var(--crust); font-weight: 600; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    line-height: 1.6;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Surdegskalkylator</h1>
+    <div class="sub">Volym → recept</div>
+  </header>
+
+  <div class="mode">
+    <button id="modeBag" class="active" data-mode="baguette">Baguette</button>
+    <button id="modeBrod" data-mode="brod">Bröd</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Önskad volym efter bulk</div>
+    <div class="field">
+      <input type="number" id="volume" value="2000" min="100" step="50">
+    </div>
+    <div class="note" id="volNote">Baguette: full degvolym. Rakt i kyl efter bulk.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Temperaturer</div>
+    <div class="row">
+      <div class="field">
+        <div class="field-head">
+          <label>Bulktemp</label>
+          <span class="val" id="btVal">22°C</span>
+        </div>
+        <input type="range" id="bt" min="18" max="26" step="1" value="22">
+      </div>
+      <div class="field">
+        <div class="field-head">
+          <label>Kyltemp</label>
+          <span class="val" id="ktVal">3°C</span>
+        </div>
+        <input type="range" id="kt" min="2" max="10" step="1" value="3">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Recept</div>
+    <div class="field">
+      <div class="field-head">
+        <label>Hydrering</label>
+        <span class="val" id="hVal">80%</span>
+      </div>
+      <input type="range" id="h" min="70" max="85" step="1" value="80">
+    </div>
+    <div class="field">
+      <div class="field-head">
+        <label>Dinkel fullkorn</label>
+        <span class="val" id="dVal">20%</span>
+      </div>
+      <input type="range" id="d" min="0" max="20" step="1" value="20">
+    </div>
+    <div class="note">Surdeg 20% · salt 3% · surdeg hydrering 100%</div>
+  </div>
+
+  <div class="recipe">
+    <div class="recipe-title">Recept</div>
+    <div class="ingr">
+      <div class="ingr-name">Manitoba Cream</div>
+      <div class="ingr-amt" id="manAmt">— <span>g</span></div>
+    </div>
+    <div class="ingr">
+      <div class="ingr-name">Dinkel fullkorn</div>
+      <div class="ingr-amt" id="speltAmt">— <span>g</span></div>
+    </div>
+    <div class="ingr">
+      <div class="ingr-name">Vatten</div>
+      <div class="ingr-amt" id="watAmt">— <span>g</span></div>
+    </div>
+    <div class="ingr">
+      <div class="ingr-name">Surdeg</div>
+      <div class="ingr-amt" id="lvAmt">— <span>g</span></div>
+    </div>
+    <div class="ingr">
+      <div class="ingr-name">Salt</div>
+      <div class="ingr-amt" id="sAmt">— <span>g</span></div>
+    </div>
+    <div class="total">
+      <div class="total-label">Degvikt</div>
+      <div class="total-amt" id="total">— g</div>
+    </div>
+    <div class="meta">
+      <div>Bulkmål <span id="factor">—</span>× · totalt mjöl <span id="flour">—</span> g · totalt vatten <span id="watTot">—</span> g</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let mode = 'baguette';
+
+const LV_PCT = 20;
+const LV_HYD = 100;
+const SALT_PCT = 3;
+
+function sizeCorrection(weight) {
+  if (weight < 800) return 0.03;
+  if (weight < 1500) return 0.07;
+  if (weight < 2500) return 0.11;
+  return 0.15;
+}
+
+function computeFactor(bulktemp, kyltemp, doughEstimate) {
+  let base = mode === 'baguette' ? 2.00 : 1.70;
+  if (mode === 'baguette') {
+    base -= (kyltemp - 3) * 0.04;
+    base -= (bulktemp - 22) * 0.015;
+    base -= sizeCorrection(doughEstimate);
+  } else {
+    base -= (bulktemp - 22) * 0.01;
+  }
+  return Math.max(1.4, Math.min(2.2, base));
+}
+
+function calc() {
+  const vol = +$('volume').value || 0;
+  const bt = +$('bt').value;
+  const kt = +$('kt').value;
+  const h = +$('h').value;
+  const d = +$('d').value;
+
+  $('btVal').textContent = bt + '°C';
+  $('ktVal').textContent = kt + '°C';
+  $('hVal').textContent = h + '%';
+  $('dVal').textContent = d + '%';
+
+  const doughEst = vol / 1.9;
+  const factor = computeFactor(bt, kt, doughEst);
+  const recipeFactor = 1 + h/100 + SALT_PCT/100;
+
+  const F = vol / factor / recipeFactor;
+  const levainW = (LV_PCT/100) * F;
+  const flourInLevain = levainW * (100 / (100 + LV_HYD));
+  const waterInLevain = levainW - flourInLevain;
+  const totalWater = (h/100) * F;
+  const waterAdded = totalWater - waterInLevain;
+  const saltG = (SALT_PCT/100) * F;
+  const speltG = (d/100) * F;
+  const manAdded = F - flourInLevain - speltG;
+  const total = F + totalWater + saltG;
+
+  const r = n => Math.round(n);
+  $('manAmt').innerHTML = r(manAdded) + ' <span>g</span>';
+  $('speltAmt').innerHTML = r(speltG) + ' <span>g</span>';
+  $('watAmt').innerHTML = r(waterAdded) + ' <span>g</span>';
+  $('lvAmt').innerHTML = r(levainW) + ' <span>g</span>';
+  $('sAmt').innerHTML = saltG.toFixed(1) + ' <span>g</span>';
+  $('total').textContent = r(total) + ' g';
+  $('factor').textContent = factor.toFixed(2);
+  $('flour').textContent = r(F);
+  $('watTot').textContent = r(totalWater);
+}
+
+document.querySelectorAll('.mode button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+    $('volNote').textContent = mode === 'baguette'
+      ? 'Baguette: full degvolym. Rakt i kyl efter bulk.'
+      : 'Bröd: bulkvolym i bunke. Preshape + final proof gör resten.';
+    calc();
+  });
+});
+
+['volume','bt','kt','h','d'].forEach(id => $(id).addEventListener('input', calc));
+calc();
+</script>
+</body>
+</html>
