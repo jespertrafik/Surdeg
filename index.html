@@ -513,7 +513,7 @@
       <div class="total-amt" id="total">— g</div>
     </div>
     <div class="meta">
-      <div>Bulkmål <span id="factor">—</span>× · totalt mjöl <span id="flour">—</span> g · totalt vatten <span id="watTot">—</span> g</div>
+      <div>Bulkmål <span id="factor">—</span>× · surdeg <span id="lvPct">—</span>% · totalt mjöl <span id="flour">—</span> g · totalt vatten <span id="watTot">—</span> g</div>
     </div>
   </div>
 </div>
@@ -524,27 +524,22 @@ let mode = 'baguette';
 let dinkelPct = 20;
 let roundMode = false;
 
-const LV_PCT = 20;
 const LV_HYD = 100;
 const SALT_PCT = 3;
 
-function sizeCorrection(weight) {
-  if (weight < 800) return 0.03;
-  if (weight < 1500) return 0.07;
-  if (weight < 2500) return 0.11;
-  return 0.15;
+function sizeAdjustment(weight) {
+  if (weight < 800) return 0;
+  if (weight < 1500) return 0.5;
+  if (weight < 2500) return 1.0;
+  return 1.5;
 }
 
-function computeFactor(bulktemp, kyltemp, doughEstimate) {
-  let base = mode === 'baguette' ? 2.00 : 1.70;
-  if (mode === 'baguette') {
-    base -= (kyltemp - 3) * 0.04;
-    base -= (bulktemp - 22) * 0.015;
-    base -= sizeCorrection(doughEstimate);
-  } else {
-    base -= (bulktemp - 22) * 0.01;
-  }
-  return Math.max(1.4, Math.min(2.2, base));
+function computeSurdeg(bulktemp, kyltemp, doughWeight) {
+  let p = 20
+        - (bulktemp - 22) * 0.5
+        - (kyltemp - 4)   * 0.5
+        - sizeAdjustment(doughWeight);
+  return Math.max(12, Math.min(28, p));
 }
 
 function calc() {
@@ -558,14 +553,18 @@ function calc() {
   $('ktVal').textContent = kt + '°C';
   $('hVal').textContent = h + '%';
 
-  const doughEst = vol / 1.9;
-  const factor = computeFactor(bt, kt, doughEst);
+  const factor = mode === 'baguette' ? 2.0 : 1.7;
   const recipeFactor = 1 + h/100 + SALT_PCT/100;
 
   let F = vol / factor / recipeFactor;
   if (roundMode) F = Math.round(F / 25) * 25;
+  let dough = F * recipeFactor;
 
-  const levainW = (LV_PCT/100) * F;
+  // Two-pass: surdeg% depends on dough weight, recompute once
+  let surdegPct = computeSurdeg(bt, kt, dough);
+  surdegPct = computeSurdeg(bt, kt, dough);
+
+  const levainW = (surdegPct/100) * F;
   const flourInLevain = levainW * (100 / (100 + LV_HYD));
   const waterInLevain = levainW - flourInLevain;
   const totalWater = (h/100) * F;
@@ -573,7 +572,6 @@ function calc() {
   const saltG = (SALT_PCT/100) * F;
   const speltG = (d/100) * F;
   const manAdded = F - flourInLevain - speltG;
-  const total = F + totalWater + saltG;
 
   const r5 = n => Math.round(n / 5) * 5;
   const r1 = n => Math.round(n);
@@ -592,8 +590,9 @@ function calc() {
   $('sAmt').innerHTML = saltR + ' <span>g</span>';
   $('total').textContent = totalR + ' g';
   $('factor').textContent = factor.toFixed(2);
-  $('flour').textContent = r(F);
-  $('watTot').textContent = r(totalWater);
+  $('lvPct').textContent = surdegPct.toFixed(1);
+  $('flour').textContent = r1(F);
+  $('watTot').textContent = r1(totalWater);
 }
 
 document.querySelectorAll('.mode button').forEach(btn => {
