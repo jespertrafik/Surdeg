@@ -246,6 +246,30 @@
     border-color: var(--accent);
     font-weight: 600;
   }
+  .dinkel-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .dinkel-btn {
+    padding: 14px 0;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+  .dinkel-btn:active { transform: scale(0.97); }
+  .dinkel-btn.active {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
   input[type="range"] {
     -webkit-appearance: none;
     width: 100%;
@@ -422,9 +446,11 @@
     <div class="field">
       <div class="field-head">
         <label>Dinkel fullkorn</label>
-        <span class="val" id="dVal">20%</span>
       </div>
-      <input type="range" id="d" min="0" max="20" step="1" value="20">
+      <div class="dinkel-toggle">
+        <button class="dinkel-btn" data-dinkel="10" type="button">10%</button>
+        <button class="dinkel-btn active" data-dinkel="20" type="button">20%</button>
+      </div>
     </div>
     <div class="note">Surdeg 20% · salt 3% · surdeg hydrering 100%</div>
   </div>
@@ -464,6 +490,7 @@
 <script>
 const $ = id => document.getElementById(id);
 let mode = 'baguette';
+let dinkelPct = 20;
 
 const LV_PCT = 20;
 const LV_HYD = 100;
@@ -493,12 +520,11 @@ function calc() {
   const bt = +$('bt').value;
   const kt = +$('kt').value;
   const h = +$('h').value;
-  const d = +$('d').value;
+  const d = dinkelPct;
 
   $('btVal').textContent = bt + '°C';
   $('ktVal').textContent = kt + '°C';
   $('hVal').textContent = h + '%';
-  $('dVal').textContent = d + '%';
 
   const doughEst = vol / 1.9;
   const factor = computeFactor(bt, kt, doughEst);
@@ -541,7 +567,16 @@ document.querySelectorAll('.mode button').forEach(btn => {
   });
 });
 
-['volume','bt','kt','h','d'].forEach(id => $(id).addEventListener('input', calc));
+['volume','bt','kt','h'].forEach(id => $(id).addEventListener('input', calc));
+
+document.querySelectorAll('.dinkel-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dinkel-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    dinkelPct = +btn.dataset.dinkel;
+    calc();
+  });
+});
 
 const VOL_STEP = 50;
 const VOL_MIN = 100;
