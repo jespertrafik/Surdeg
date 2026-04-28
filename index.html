@@ -24,21 +24,60 @@
       radial-gradient(circle at 80% 80%, rgba(200,151,90,0.08) 0, transparent 50%);
     color: var(--ink);
     min-height: 100vh;
-    padding: 20px 16px 60px;
+    padding: 0 0 60px;
     line-height: 1.4;
   }
-  .wrap { max-width: 520px; margin: 0 auto; }
-  header {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px; }
+  .hero {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #2b1f15 url('bread.jpg') center/cover no-repeat;
+    margin-bottom: 28px;
     border-bottom: 1px solid var(--line);
   }
-  h1 {
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(43,31,21,0) 40%,
+      rgba(43,31,21,0.55) 75%,
+      rgba(244,237,224,0.95) 100%
+    );
+    pointer-events: none;
+  }
+  .hero-title {
+    position: absolute;
+    bottom: 22px;
+    left: 24px;
+    right: 24px;
+    color: #faf6ec;
+    z-index: 1;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+  }
+  header {
+    margin-bottom: 20px;
+  }
+  .hero-title h1, header h1 {
     font-weight: 300;
-    font-size: 32px;
+    font-size: 38px;
     letter-spacing: -0.02em;
     font-style: italic;
+    line-height: 1.05;
   }
+  .hero-title .sub, header .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-top: 6px;
+    opacity: 0.85;
+  }
+  .hero-title .sub { color: var(--crust); opacity: 1; }
+  header { display: none; }
   .sub {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
@@ -76,9 +115,10 @@
   .card {
     background: var(--bg-card);
     border: 1px solid var(--line);
-    border-radius: 4px;
+    border-radius: 6px;
     padding: 18px 16px;
     margin-bottom: 14px;
+    box-shadow: 0 1px 2px rgba(43,31,21,0.04);
   }
   .card-title {
     font-family: 'JetBrains Mono', monospace;
@@ -141,8 +181,11 @@
   .recipe {
     background: var(--ink);
     color: var(--bg);
-    border-radius: 4px;
-    padding: 22px 18px;
+    border-radius: 6px;
+    padding: 24px 20px;
+    box-shadow: 0 4px 16px rgba(43,31,21,0.18);
+    background-image:
+      radial-gradient(circle at 90% 0%, rgba(200,151,90,0.08) 0, transparent 50%);
   }
   .recipe-title {
     font-family: 'JetBrains Mono', monospace;
@@ -216,6 +259,12 @@
 </style>
 </head>
 <body>
+<div class="hero">
+  <div class="hero-title">
+    <h1>Surdegskalkylator</h1>
+    <div class="sub">Volym → recept</div>
+  </div>
+</div>
 <div class="wrap">
   <header>
     <h1>Surdegskalkylator</h1>
