@@ -166,8 +166,8 @@
   input[type="number"]:focus { outline: none; border-color: var(--accent); }
   .vol-stepper {
     display: grid;
-    grid-template-columns: 64px 1fr 64px;
-    gap: 10px;
+    grid-template-columns: 52px 1fr 52px;
+    gap: 8px;
     align-items: stretch;
     margin-bottom: 12px;
   }
@@ -176,7 +176,7 @@
     color: var(--bg);
     border: none;
     border-radius: 6px;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 300;
     line-height: 1;
     cursor: pointer;
@@ -200,10 +200,11 @@
     border: none;
     background: transparent;
     text-align: center;
-    font-size: 38px;
+    font-size: 30px;
     font-weight: 600;
     padding: 14px 0;
     width: 100%;
+    min-width: 0;
     color: var(--ink);
     -moz-appearance: textfield;
   }
