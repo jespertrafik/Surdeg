@@ -541,13 +541,22 @@ function calc() {
   const manAdded = F - flourInLevain - speltG;
   const total = F + totalWater + saltG;
 
-  const r = n => Math.round(n);
-  $('manAmt').innerHTML = r(manAdded) + ' <span>g</span>';
-  $('speltAmt').innerHTML = r(speltG) + ' <span>g</span>';
-  $('watAmt').innerHTML = r(waterAdded) + ' <span>g</span>';
-  $('lvAmt').innerHTML = r(levainW) + ' <span>g</span>';
-  $('sAmt').innerHTML = saltG.toFixed(1) + ' <span>g</span>';
-  $('total').textContent = r(total) + ' g';
+  const r5 = n => Math.round(n / 5) * 5;
+  const r1 = n => Math.round(n);
+
+  const manR = r5(manAdded);
+  const speltR = r5(speltG);
+  const watR = r5(waterAdded);
+  const lvR = r5(levainW);
+  const saltR = r1(saltG);
+  const totalR = manR + speltR + watR + lvR + saltR;
+
+  $('manAmt').innerHTML = manR + ' <span>g</span>';
+  $('speltAmt').innerHTML = speltR + ' <span>g</span>';
+  $('watAmt').innerHTML = watR + ' <span>g</span>';
+  $('lvAmt').innerHTML = lvR + ' <span>g</span>';
+  $('sAmt').innerHTML = saltR + ' <span>g</span>';
+  $('total').textContent = totalR + ' g';
   $('factor').textContent = factor.toFixed(2);
   $('flour').textContent = r(F);
   $('watTot').textContent = r(totalWater);
