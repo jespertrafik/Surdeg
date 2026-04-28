@@ -513,7 +513,8 @@
       <div class="total-amt" id="total">— g</div>
     </div>
     <div class="meta">
-      <div>Bulkmål <span id="factor">—</span>× · surdeg <span id="lvPct">—</span>% · totalt mjöl <span id="flour">—</span> g · totalt vatten <span id="watTot">—</span> g</div>
+      <div>Bulkmål <span id="factor">—</span>× · surdeg <span id="lvPct">—</span>%</div>
+      <div style="margin-top:6px;font-size:9px;opacity:0.7">Totaler — surdegens mjöl/vatten ingår</div>
     </div>
   </div>
 </div>
@@ -565,23 +566,20 @@ function calc() {
   surdegPct = computeSurdeg(bt, kt, dough);
 
   const levainW = (surdegPct/100) * F;
-  const flourInLevain = levainW * (100 / (100 + LV_HYD));
-  const waterInLevain = levainW - flourInLevain;
   const totalWater = (h/100) * F;
-  const waterAdded = totalWater - waterInLevain;
   const saltG = (SALT_PCT/100) * F;
   const speltG = (d/100) * F;
-  const manAdded = F - flourInLevain - speltG;
+  const manTotal = F - speltG;
 
   const r5 = n => Math.round(n / 5) * 5;
   const r1 = n => Math.round(n);
 
-  const manR = r5(manAdded);
+  const manR = r5(manTotal);
   const speltR = r5(speltG);
-  const watR = r5(waterAdded);
+  const watR = r5(totalWater);
   const lvR = r5(levainW);
   const saltR = r1(saltG);
-  const totalR = manR + speltR + watR + lvR + saltR;
+  const totalR = r5(F + totalWater + saltG);
 
   $('manAmt').innerHTML = manR + ' <span>g</span>';
   $('speltAmt').innerHTML = speltR + ' <span>g</span>';
@@ -591,8 +589,6 @@ function calc() {
   $('total').textContent = totalR + ' g';
   $('factor').textContent = factor.toFixed(2);
   $('lvPct').textContent = surdegPct.toFixed(1);
-  $('flour').textContent = r1(F);
-  $('watTot').textContent = r1(totalWater);
 }
 
 document.querySelectorAll('.mode button').forEach(btn => {
