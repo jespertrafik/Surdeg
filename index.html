@@ -533,7 +533,6 @@
     </div>
     <div class="meta">
       <div>Bulkmål <span id="factor">—</span>× · surdeg <span id="lvPct">—</span>%</div>
-      <div style="margin-top:6px;font-size:9px;opacity:0.7">Mjöl + vatten = nettomängd att tillsätta utöver surdegen</div>
     </div>
   </div>
 </div>
@@ -546,6 +545,7 @@ let roundMode = false;
 
 const LV_HYD = 100;
 const SALT_PCT = 3;
+const REF_LV_PCT = 20;
 
 function sizeAdjustment(weight) {
   if (weight < 800) return 0;
@@ -554,67 +554,57 @@ function sizeAdjustment(weight) {
   return 1.5;
 }
 
-function computeSurdeg(bulktemp, kyltemp, doughWeight) {
-  let p = 20
-        - (bulktemp - 22) * 0.5
-        - (kyltemp - 4)   * 0.5
-        - sizeAdjustment(doughWeight);
-  return Math.max(12, Math.min(28, p));
-}
-
 function calc() {
-  const vol = +$('volume').value || 0;
-  const bt = +$('bt').value;
-  const kt = +$('kt').value;
-  const h = +$('h').value;
-  const d = dinkelPct;
+  const V = +$('volume').value || 0;
+  const Tb = +$('bt').value;
+  const Tk = +$('kt').value;
+  const H = +$('h').value;
+  const D = dinkelPct;
 
-  $('btVal').textContent = bt + '°C';
-  $('ktVal').textContent = kt + '°C';
-  $('hVal').textContent = h + '%';
+  $('btVal').textContent = Tb + '°C';
+  $('ktVal').textContent = Tk + '°C';
+  $('hVal').textContent = H + '%';
 
   const factor = mode === 'baguette' ? 2.0 : 1.7;
-  const recipeFactor = 1 + h/100 + SALT_PCT/100;
+  const recipeFactor = 1 + H/100 + SALT_PCT/100;
 
-  let F = vol / factor / recipeFactor;
-  if (roundMode) F = Math.round(F / 25) * 25;
-  let dough = F * recipeFactor;
+  // 1. Surdeg% från temp + storlek (estDough oberoende av hydrering)
+  const estDough = V / factor;
+  const sizeAdj = sizeAdjustment(estDough);
+  let surdegPct = 20 - (Tb - 22) * 0.5 - (Tk - 4) * 0.5 - sizeAdj;
+  surdegPct = Math.max(12, Math.min(28, surdegPct));
 
-  // Two-pass: surdeg% depends on dough weight, recompute once
-  let surdegPct = computeSurdeg(bt, kt, dough);
-  surdegPct = computeSurdeg(bt, kt, dough);
+  // 2. Total mjöl och vatten
+  let F_total = V / factor / recipeFactor;
+  if (roundMode) F_total = Math.round(F_total / 25) * 25;
+  const W_total = (H/100) * F_total;
+  const saltG   = (SALT_PCT/100) * F_total;
 
-  const levainW = (surdegPct/100) * F;
-  const totalWater = (h/100) * F;
-  const saltG = (SALT_PCT/100) * F;
-  const speltG = (d/100) * F;
-  const manTotal = F - speltG;
+  // 3. Recept-rader använder REF_LV_PCT (20%) → fasta värden oberoende av temp
+  const refLevainG   = (REF_LV_PCT/100) * F_total;
+  const refFlourInLv = refLevainG / 2;
+  const refWaterInLv = refLevainG / 2;
 
-  // Surdeg @ 100% hydrering = halva mjöl, halva vatten — dra bort från totaler
-  // så att summan av ingrediensraderna = degvikt
-  const levainFlour = levainW / 2;
-  const levainWater = levainW / 2;
-  const manNet = manTotal - levainFlour;
-  const watNet = totalWater - levainWater;
+  const dinkelG    = (D/100) * F_total;
+  const manitobaG  = F_total - refFlourInLv - dinkelG;
+  const waterAdded = W_total - refWaterInLv;
 
-  const r5 = n => Math.round(n / 5) * 5;
+  // 4. Surdeg-raden använder faktisk temp-justerad %
+  const surdegG = (surdegPct/100) * F_total;
+
+  // 5. Degvikt = summan av recept-raderna (matematisk identitet)
+  const dough = manitobaG + dinkelG + waterAdded + surdegG + saltG;
+
   const r1 = n => Math.round(n);
 
-  const manR = r5(manNet);
-  const speltR = r5(speltG);
-  const watR = r5(watNet);
-  const lvR = r5(levainW);
-  const saltR = r1(saltG);
-  const totalR = r5(F + totalWater + saltG);
-
-  $('manAmt').innerHTML = manR + ' <span>g</span>';
-  $('speltAmt').innerHTML = speltR + ' <span>g</span>';
-  $('watAmt').innerHTML = watR + ' <span>g</span>';
-  $('lvAmt').innerHTML = lvR + ' <span>g</span>';
-  $('sAmt').innerHTML = saltR + ' <span>g</span>';
-  $('total').textContent = totalR + ' g';
+  $('manAmt').innerHTML  = r1(manitobaG)  + ' <span>g</span>';
+  $('speltAmt').innerHTML = r1(dinkelG)    + ' <span>g</span>';
+  $('watAmt').innerHTML  = r1(waterAdded) + ' <span>g</span>';
+  $('lvAmt').innerHTML   = r1(surdegG)    + ' <span>g</span>';
+  $('sAmt').innerHTML    = saltG.toFixed(1) + ' <span>g</span>';
+  $('total').textContent = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
-  $('lvPct').textContent = surdegPct.toFixed(1);
+  $('lvPct').textContent  = surdegPct.toFixed(1);
 }
 
 document.querySelectorAll('.mode button').forEach(btn => {
