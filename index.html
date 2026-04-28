@@ -318,25 +318,26 @@
     color: var(--crust);
   }
   .round-btn {
-    background: transparent;
-    border: 1px solid rgba(200,151,90,0.4);
-    color: var(--crust);
-    padding: 6px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--bg-card);
+    color: var(--ink);
+    padding: 8px 16px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.18em;
     border-radius: 999px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
   }
   .round-btn:active { transform: scale(0.96); }
   .round-btn.active {
     background: var(--crust);
     color: var(--ink);
     border-color: var(--crust);
-    font-weight: 600;
   }
   .ingr {
     display: flex;
