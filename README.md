@@ -2,7 +2,7 @@
 
 Surdegskalkylator: ange önskad jäsvolym → få ut exakt recept.
 
-Live: https://brod.jespertrafik.com
+Live: https://surdeg.jespertrafik.com
 
 ## Logik
 - Volym efter bulk är facit för "klar" — ingen poke-test, inga gissningar
