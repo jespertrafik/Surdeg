@@ -303,13 +303,39 @@
     background-image:
       radial-gradient(circle at 90% 0%, rgba(200,151,90,0.08) 0, transparent 50%);
   }
+  .recipe-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
   .recipe-title {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.25em;
     color: var(--crust);
-    margin-bottom: 16px;
+  }
+  .round-btn {
+    background: transparent;
+    border: 1px solid rgba(200,151,90,0.4);
+    color: var(--crust);
+    padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    border-radius: 999px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+  .round-btn:active { transform: scale(0.96); }
+  .round-btn.active {
+    background: var(--crust);
+    color: var(--ink);
+    border-color: var(--crust);
+    font-weight: 600;
   }
   .ingr {
     display: flex;
@@ -456,7 +482,10 @@
   </div>
 
   <div class="recipe">
-    <div class="recipe-title">Recept</div>
+    <div class="recipe-head">
+      <div class="recipe-title">Recept</div>
+      <button class="round-btn" id="roundBtn" type="button" aria-pressed="false">Avrunda</button>
+    </div>
     <div class="ingr">
       <div class="ingr-name">Manitoba Cream</div>
       <div class="ingr-amt" id="manAmt">— <span>g</span></div>
@@ -491,6 +520,7 @@
 const $ = id => document.getElementById(id);
 let mode = 'baguette';
 let dinkelPct = 20;
+let roundMode = false;
 
 const LV_PCT = 20;
 const LV_HYD = 100;
@@ -530,7 +560,9 @@ function calc() {
   const factor = computeFactor(bt, kt, doughEst);
   const recipeFactor = 1 + h/100 + SALT_PCT/100;
 
-  const F = vol / factor / recipeFactor;
+  let F = vol / factor / recipeFactor;
+  if (roundMode) F = Math.round(F / 25) * 25;
+
   const levainW = (LV_PCT/100) * F;
   const flourInLevain = levainW * (100 / (100 + LV_HYD));
   const waterInLevain = levainW - flourInLevain;
@@ -577,6 +609,13 @@ document.querySelectorAll('.mode button').forEach(btn => {
 });
 
 ['volume','bt','kt','h'].forEach(id => $(id).addEventListener('input', calc));
+
+$('roundBtn').addEventListener('click', () => {
+  roundMode = !roundMode;
+  $('roundBtn').classList.toggle('active', roundMode);
+  $('roundBtn').setAttribute('aria-pressed', roundMode);
+  calc();
+});
 
 document.querySelectorAll('.dinkel-btn').forEach(btn => {
   btn.addEventListener('click', () => {
