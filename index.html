@@ -575,8 +575,7 @@ function calc() {
   surdegPct = Math.max(12, Math.min(28, surdegPct));
 
   // 2. Total mjöl och vatten
-  let F_total = V / factor / recipeFactor;
-  if (roundMode) F_total = Math.round(F_total / 25) * 25;
+  const F_total = V / factor / recipeFactor;
   const W_total = (H/100) * F_total;
   const saltG   = (SALT_PCT/100) * F_total;
 
@@ -592,17 +591,23 @@ function calc() {
   // 4. Surdeg-raden använder faktisk temp-justerad %
   const surdegG = (surdegPct/100) * F_total;
 
-  // 5. Degvikt = summan av recept-raderna (matematisk identitet)
-  const dough = manitobaG + dinkelG + waterAdded + surdegG + saltG;
-
   const r1 = n => Math.round(n);
+  const r5 = n => Math.round(n / 5) * 5;
 
-  $('manAmt').innerHTML  = r1(manitobaG)  + ' <span>g</span>';
-  $('speltAmt').innerHTML = r1(dinkelG)    + ' <span>g</span>';
-  $('watAmt').innerHTML  = r1(waterAdded) + ' <span>g</span>';
-  $('lvAmt').innerHTML   = r1(surdegG)    + ' <span>g</span>';
-  $('sAmt').innerHTML    = (roundMode ? r1(saltG) : saltG.toFixed(1)) + ' <span>g</span>';
-  $('total').textContent = r1(dough) + ' g';
+  // 5. Avrundning + degvikt = summan av visade rader (identitet bevaras)
+  const manD = roundMode ? r5(manitobaG)  : r1(manitobaG);
+  const dinD = roundMode ? r5(dinkelG)    : r1(dinkelG);
+  const watD = roundMode ? r5(waterAdded) : r1(waterAdded);
+  const lvD  = roundMode ? r5(surdegG)    : r1(surdegG);
+  const salD = roundMode ? r1(saltG)      : +saltG.toFixed(1);
+  const dough = manD + dinD + watD + lvD + salD;
+
+  $('manAmt').innerHTML   = manD + ' <span>g</span>';
+  $('speltAmt').innerHTML = dinD + ' <span>g</span>';
+  $('watAmt').innerHTML   = watD + ' <span>g</span>';
+  $('lvAmt').innerHTML    = lvD  + ' <span>g</span>';
+  $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
+  $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
   $('lvPct').textContent  = surdegPct.toFixed(1);
 }
