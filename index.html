@@ -532,7 +532,7 @@
       <div class="total-amt" id="total">— g</div>
     </div>
     <div class="meta">
-      <div>Bulkmål <span id="factor">—</span>× · surdeg <span id="lvPct">—</span>%</div>
+      <div>Bulkmål <span id="factor">—</span>×</div>
     </div>
   </div>
 </div>
@@ -543,16 +543,8 @@ let mode = 'baguette';
 let dinkelPct = 20;
 let roundMode = false;
 
-const LV_HYD = 100;
 const SALT_PCT = 3;
-const REF_LV_PCT = 20;
-
-function sizeAdjustment(weight) {
-  if (weight < 800) return 0;
-  if (weight < 1500) return 0.5;
-  if (weight < 2500) return 1.0;
-  return 1.5;
-}
+const SURDEG_PCT = 20;
 
 function calc() {
   const V = +$('volume').value || 0;
@@ -568,33 +560,20 @@ function calc() {
   const factor = mode === 'baguette' ? 2.0 : 1.7;
   const recipeFactor = 1 + H/100 + SALT_PCT/100;
 
-  // 1. Surdeg% från temp + storlek (estDough oberoende av hydrering)
-  const estDough = V / factor;
-  const sizeAdj = sizeAdjustment(estDough);
-  let surdegPct = 20 - (Tb - 22) * 0.5 - (Tk - 4) * 0.5 - sizeAdj;
-  surdegPct = Math.max(12, Math.min(28, surdegPct));
-
-  // 2. Total mjöl och vatten
   const F_total = V / factor / recipeFactor;
   const W_total = (H/100) * F_total;
   const saltG   = (SALT_PCT/100) * F_total;
 
-  // 3. Recept-rader använder REF_LV_PCT (20%) → fasta värden oberoende av temp
-  const refLevainG   = (REF_LV_PCT/100) * F_total;
-  const refFlourInLv = refLevainG / 2;
-  const refWaterInLv = refLevainG / 2;
+  const surdegG     = (SURDEG_PCT/100) * F_total;
+  const refWaterInLv = surdegG / 2;
 
   const dinkelG    = (D/100) * F_total;
-  const manitobaG  = F_total - refFlourInLv - dinkelG;
+  const manitobaG  = F_total - dinkelG;
   const waterAdded = W_total - refWaterInLv;
-
-  // 4. Surdeg-raden använder faktisk temp-justerad %
-  const surdegG = (surdegPct/100) * F_total;
 
   const r1 = n => Math.round(n);
   const r5 = n => Math.round(n / 5) * 5;
 
-  // 5. Avrundning + degvikt = summan av visade rader (identitet bevaras)
   const manD = roundMode ? r5(manitobaG)  : r1(manitobaG);
   const dinD = roundMode ? r5(dinkelG)    : r1(dinkelG);
   const watD = roundMode ? r5(waterAdded) : r1(waterAdded);
@@ -609,7 +588,6 @@ function calc() {
   $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
-  $('lvPct').textContent  = surdegPct.toFixed(1);
 }
 
 document.querySelectorAll('.mode button').forEach(btn => {
