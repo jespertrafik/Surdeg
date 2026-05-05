@@ -574,9 +574,11 @@ function calc() {
 
   const surdegG     = (SURDEG_PCT/100) * F_total;
   const refWaterInLv = surdegG / 2;
+  const refFlourInLv = surdegG / 2;
 
   const dinkelG    = (D/100) * F_total;
-  const manitobaG  = F_total - dinkelG;
+  const mainFlour  = F_total - refFlourInLv;
+  const manitobaG  = mainFlour - dinkelG;
   const waterAdded = W_total - refWaterInLv;
 
   const r1 = n => Math.round(n);
