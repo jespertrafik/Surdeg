@@ -492,6 +492,13 @@
     </div>
     <div class="field">
       <div class="field-head">
+        <label>Surdeg</label>
+        <span class="val" id="sdVal">20%</span>
+      </div>
+      <input type="range" id="sd" min="20" max="25" step="1" value="20">
+    </div>
+    <div class="field">
+      <div class="field-head">
         <label>Dinkel fullkorn</label>
       </div>
       <div class="dinkel-toggle">
@@ -499,7 +506,7 @@
         <button class="dinkel-btn active" data-dinkel="20" type="button">20%</button>
       </div>
     </div>
-    <div class="note">Surdeg 20% · salt 3% · surdeg hydrering 100%</div>
+    <div class="note">Salt 3% · surdeg hydrering 100%</div>
   </div>
 
   <div class="recipe">
@@ -544,18 +551,19 @@ let dinkelPct = 20;
 let roundMode = false;
 
 const SALT_PCT = 3;
-const SURDEG_PCT = 20;
 
 function calc() {
   const V = +$('volume').value || 0;
   const Tb = +$('bt').value;
   const Tk = +$('kt').value;
   const H = +$('h').value;
+  const SURDEG_PCT = +$('sd').value;
   const D = dinkelPct;
 
   $('btVal').textContent = Tb + '°C';
   $('ktVal').textContent = Tk + '°C';
   $('hVal').textContent = H + '%';
+  $('sdVal').textContent = SURDEG_PCT + '%';
 
   const factor = mode === 'baguette' ? 2.0 : 1.7;
   const recipeFactor = 1 + H/100 + SALT_PCT/100;
@@ -604,7 +612,7 @@ document.querySelectorAll('.mode button').forEach(btn => {
   });
 });
 
-['volume','bt','kt','h'].forEach(id => $(id).addEventListener('input', calc));
+['volume','bt','kt','h','sd'].forEach(id => $(id).addEventListener('input', calc));
 
 $('roundBtn').addEventListener('click', () => {
   roundMode = !roundMode;
