@@ -503,6 +503,13 @@
     </div>
     <div class="field">
       <div class="field-head">
+        <label>Bulkmål (volymökning)</label>
+        <span class="val" id="bulkVal">100%</span>
+      </div>
+      <input type="range" id="bulk" min="50" max="100" step="5" value="100">
+    </div>
+    <div class="field">
+      <div class="field-head">
         <label>Dinkel fullkorn</label>
       </div>
       <div class="dinkel-toggle">
@@ -563,14 +570,16 @@ function calc() {
   const Tk = +$('kt').value;
   const H = +$('h').value;
   const SURDEG_PCT = +$('sd').value;
+  const bulkmal = +$('bulk').value;
   const D = dinkelPct;
 
   $('btVal').textContent = Tb + '°C';
   $('ktVal').textContent = Tk + '°C';
   $('hVal').textContent = H + '%';
   $('sdVal').textContent = SURDEG_PCT + '%';
+  $('bulkVal').textContent = bulkmal + '%';
 
-  const factor = mode === 'baguette' ? 2.0 : 1.7;
+  const factor = 1 + bulkmal/100;
 
   // Convention: input = huvudmjöl (manitoba+dinkel). Surdegens mjöl räknas EJ in i huvudmjöl.
   // Hydrering, surdeg%, salt%, dinkel% räknas alla på huvudmjöl.
@@ -625,7 +634,7 @@ document.querySelectorAll('.mode button').forEach(btn => {
   });
 });
 
-['volume','bt','kt','h','sd'].forEach(id => $(id).addEventListener('input', calc));
+['volume','bt','kt','h','sd','bulk'].forEach(id => $(id).addEventListener('input', calc));
 
 $('roundBtn').addEventListener('click', () => {
   roundMode = !roundMode;
