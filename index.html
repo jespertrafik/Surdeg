@@ -564,16 +564,33 @@ let inputMode = 'ml';
 
 const SALT_PCT = 3;
 const DOUGH_DENSITY = 1.1;  // g/ml — typisk högvätskedeg före jäsning
-const RECIPE_FACTOR = 2.0;  // ml-input = slutvolym efter full bulk (100% jäsning). Konstant så receptet inte ändras av slider/mode.
 
-function calc() {
-  const X = +$('volume').value || 0;
-  const Tb = +$('bt').value;
-  const Tk = +$('kt').value;
+// Källa till sanning för receptet:
+let state = { mainFlour: 500 };  // gram huvudmjöl (manitoba + dinkel)
+
+function getParams() {
   const H = +$('h').value;
   const SURDEG_PCT = +$('sd').value;
   const bulkmal = +$('bulk').value;
-  const D = dinkelPct;
+  const factor = 1 + bulkmal/100;
+  const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
+  return { H, SURDEG_PCT, bulkmal, factor, doughPerX, D: dinkelPct };
+}
+
+function mlFromMainFlour(mainFlour) {
+  const { factor, doughPerX } = getParams();
+  return mainFlour * doughPerX / DOUGH_DENSITY * factor;
+}
+
+function mainFlourFromMl(ml) {
+  const { factor, doughPerX } = getParams();
+  return ml * DOUGH_DENSITY / factor / doughPerX;
+}
+
+function calc() {
+  const Tb = +$('bt').value;
+  const Tk = +$('kt').value;
+  const { H, SURDEG_PCT, bulkmal, factor, doughPerX, D } = getParams();
 
   $('btVal').textContent = Tb + '°C';
   $('ktVal').textContent = Tk + '°C';
@@ -581,18 +598,8 @@ function calc() {
   $('sdVal').textContent = SURDEG_PCT + '%';
   $('bulkVal').textContent = bulkmal + '%';
 
-  const factor = 1 + bulkmal/100;  // bara för bulkvolym-visning, inte recept
-
-  // Convention: input = huvudmjöl (manitoba+dinkel). Surdegens mjöl räknas EJ in i huvudmjöl.
-  // Hydrering, surdeg%, salt%, dinkel% räknas alla på huvudmjöl.
-  // Hydrering tolkas dock som total vatten / totalt mjöl (huvudmjöl + surdegens mjöl).
-  // Degvikt = mainFlour + surdeg + waterAdded + salt
-  //        = X + SURDEG%·X + (H%·(X+SURDEG%·X/2) - SURDEG%·X/2) + SALT%·X
-  //        = X·[1 + SALT% + H% + SURDEG%·(1+H%)/2]
-  const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
-  // ml-läge: X = slutvolym efter full bulk. Recept räknas baklänges med
-  // konstant RECIPE_FACTOR (=2.0). Slidern påverkar EJ receptet.
-  const mainFlour = inputMode === 'ml' ? (X * DOUGH_DENSITY / RECIPE_FACTOR / doughPerX) : X;
+  // mainFlour är källan. ml-display = derived från mainFlour + nuvarande slider/H/surdeg.
+  const mainFlour = state.mainFlour;
 
   const surdegG      = (SURDEG_PCT/100) * mainFlour;
   const refFlourInLv = surdegG / 2;
@@ -622,7 +629,17 @@ function calc() {
   $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
-  $('bulkVol').textContent = r1(dough / DOUGH_DENSITY * factor);
+  const bulkVolMl = dough / DOUGH_DENSITY * factor;
+  $('bulkVol').textContent = r1(bulkVolMl);
+
+  // Sync input-fältet utan att trigga input-eventet
+  if (document.activeElement !== $('volume')) {
+    if (inputMode === 'ml') {
+      $('volume').value = Math.round(bulkVolMl / 50) * 50;
+    } else {
+      $('volume').value = r1(mainFlour);
+    }
+  }
 }
 
 document.querySelectorAll('.mode button').forEach(btn => {
@@ -639,7 +656,7 @@ document.querySelectorAll('.mode button').forEach(btn => {
   });
 });
 
-['volume','bt','kt','h','sd','bulk'].forEach(id => $(id).addEventListener('input', calc));
+['bt','kt','h','sd','bulk'].forEach(id => $(id).addEventListener('input', calc));
 
 $('roundBtn').addEventListener('click', () => {
   roundMode = !roundMode;
@@ -677,6 +694,7 @@ function setVolume(v) {
   v = Math.max(cfg.min, Math.min(cfg.max, Math.round(v / cfg.step) * cfg.step));
   $('volume').value = v;
   lastVal[inputMode] = v;
+  state.mainFlour = inputMode === 'ml' ? mainFlourFromMl(v) : v;
   document.querySelectorAll('#volPresets .preset-btn').forEach(b => {
     b.classList.toggle('active', +b.dataset.vol === v);
   });
@@ -705,9 +723,11 @@ document.querySelectorAll('[data-imode]').forEach(btn => {
 $('volMinus').addEventListener('click', () => setVolume((+$('volume').value || 0) - MODES[inputMode].step));
 $('volPlus').addEventListener('click',  () => setVolume((+$('volume').value || 0) + MODES[inputMode].step));
 $('volume').addEventListener('input', () => {
-  lastVal[inputMode] = +$('volume').value;
+  const v = +$('volume').value;
+  lastVal[inputMode] = v;
+  state.mainFlour = inputMode === 'ml' ? mainFlourFromMl(v) : v;
   document.querySelectorAll('#volPresets .preset-btn').forEach(b => {
-    b.classList.toggle('active', +b.dataset.vol === +$('volume').value);
+    b.classList.toggle('active', +b.dataset.vol === v);
   });
   calc();
 });
