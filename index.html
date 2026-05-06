@@ -564,6 +564,7 @@ let inputMode = 'ml';
 
 const SALT_PCT = 3;
 const DOUGH_DENSITY = 1.1;  // g/ml — typisk högvätskedeg före jäsning
+const RECIPE_FACTOR = 2.0;  // ml-input = slutvolym efter full bulk (100% jäsning). Konstant så receptet inte ändras av slider/mode.
 
 function calc() {
   const X = +$('volume').value || 0;
@@ -580,7 +581,7 @@ function calc() {
   $('sdVal').textContent = SURDEG_PCT + '%';
   $('bulkVal').textContent = bulkmal + '%';
 
-  const factor = 1 + bulkmal/100;
+  const factor = 1 + bulkmal/100;  // bara för bulkvolym-visning, inte recept
 
   // Convention: input = huvudmjöl (manitoba+dinkel). Surdegens mjöl räknas EJ in i huvudmjöl.
   // Hydrering, surdeg%, salt%, dinkel% räknas alla på huvudmjöl.
@@ -589,9 +590,9 @@ function calc() {
   //        = X + SURDEG%·X + (H%·(X+SURDEG%·X/2) - SURDEG%·X/2) + SALT%·X
   //        = X·[1 + SALT% + H% + SURDEG%·(1+H%)/2]
   const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
-  // ml-läge: X = degvolym vid start. Konverterar via densitet 1.1 g/ml.
-  // Bulkmål påverkar EJ recept, bara slutvolymen (bulkVol = startVol × factor).
-  const mainFlour = inputMode === 'ml' ? (X * DOUGH_DENSITY / doughPerX) : X;
+  // ml-läge: X = slutvolym efter full bulk. Recept räknas baklänges med
+  // konstant RECIPE_FACTOR (=2.0). Slidern påverkar EJ receptet.
+  const mainFlour = inputMode === 'ml' ? (X * DOUGH_DENSITY / RECIPE_FACTOR / doughPerX) : X;
 
   const surdegG      = (SURDEG_PCT/100) * mainFlour;
   const refFlourInLv = surdegG / 2;
@@ -657,7 +658,7 @@ document.querySelectorAll('.dinkel-btn').forEach(btn => {
 });
 
 const MODES = {
-  ml: { step: 50,  min: 100, max: 10000, presets: [500,750,1000,1250,1500],   def: 1000, unit: 'ml', title: 'Degvolym (vid start)' },
+  ml: { step: 50,  min: 100, max: 10000, presets: [1000,1500,2000,2500,3000], def: 2000, unit: 'ml', title: 'Slutvolym efter full bulk' },
   g:  { step: 25,  min: 50,  max: 3000,  presets: [250,500,750,1000,1500],    def: 500,  unit: 'g',  title: 'Huvudmjöl (manitoba + dinkel)' }
 };
 let lastVal = { ml: 2000, g: 500 };
