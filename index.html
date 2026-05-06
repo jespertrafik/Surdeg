@@ -462,23 +462,23 @@
   </div>
 
   <div class="card">
-    <div class="card-title">Mjölmängd (manitoba + dinkel)</div>
+    <div class="card-title">Önskad volym efter bulk</div>
     <div class="vol-stepper">
-      <button class="step-btn" id="volMinus" aria-label="Minska mjöl" type="button">−</button>
+      <button class="step-btn" id="volMinus" aria-label="Minska volym" type="button">−</button>
       <div class="vol-display">
-        <input type="number" id="volume" value="500" min="100" step="50" inputmode="numeric">
-        <span class="vol-unit">g</span>
+        <input type="number" id="volume" value="2000" min="100" step="50" inputmode="numeric">
+        <span class="vol-unit">ml</span>
       </div>
-      <button class="step-btn" id="volPlus" aria-label="Öka mjöl" type="button">+</button>
+      <button class="step-btn" id="volPlus" aria-label="Öka volym" type="button">+</button>
     </div>
     <div class="vol-presets">
-      <button class="preset-btn" data-vol="250" type="button">250</button>
-      <button class="preset-btn" data-vol="500" type="button">500</button>
-      <button class="preset-btn" data-vol="750" type="button">750</button>
       <button class="preset-btn" data-vol="1000" type="button">1000</button>
       <button class="preset-btn" data-vol="1500" type="button">1500</button>
+      <button class="preset-btn" data-vol="2000" type="button">2000</button>
+      <button class="preset-btn" data-vol="2500" type="button">2500</button>
+      <button class="preset-btn" data-vol="3000" type="button">3000</button>
     </div>
-    <div class="note" id="volNote">Surdeg och salt räknas mot huvudmjölet. Hydrering räknas mot totalt mjöl (inkl surdegens mjöl).</div>
+    <div class="note" id="volNote">Baguette: full degvolym. Rakt i kyl efter bulk.</div>
   </div>
 
   <div class="card">
@@ -553,7 +553,7 @@ let roundMode = false;
 const SALT_PCT = 3;
 
 function calc() {
-  const M = +$('volume').value || 0;
+  const V = +$('volume').value || 0;
   const Tb = +$('bt').value;
   const Tk = +$('kt').value;
   const H = +$('h').value;
@@ -566,17 +566,20 @@ function calc() {
   $('sdVal').textContent = SURDEG_PCT + '%';
 
   const factor = mode === 'baguette' ? 2.0 : 1.7;
+  const recipeFactor = 1 + H/100 + SALT_PCT/100;
 
-  const surdegG    = (SURDEG_PCT/100) * M;
-  const lvFlour    = surdegG / 2;
-  const lvWater    = surdegG / 2;
-  const totalFlour = M + lvFlour;
-  const totalWater = (H/100) * totalFlour;
-  const waterAdded = totalWater - lvWater;
-  const saltG      = (SALT_PCT/100) * M;
+  const F_total = V / factor / recipeFactor;
+  const W_total = (H/100) * F_total;
+  const saltG   = (SALT_PCT/100) * F_total;
 
-  const dinkelG    = (D/100) * M;
-  const manitobaG  = M - dinkelG;
+  const surdegG     = (SURDEG_PCT/100) * F_total;
+  const refWaterInLv = surdegG / 2;
+  const refFlourInLv = surdegG / 2;
+
+  const dinkelG    = (D/100) * F_total;
+  const mainFlour  = F_total - refFlourInLv;
+  const manitobaG  = mainFlour - dinkelG;
+  const waterAdded = W_total - refWaterInLv;
 
   const r1 = n => Math.round(n);
   const r5 = n => Math.round(n / 5) * 5;
@@ -602,6 +605,9 @@ document.querySelectorAll('.mode button').forEach(btn => {
     document.querySelectorAll('.mode button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     mode = btn.dataset.mode;
+    $('volNote').textContent = mode === 'baguette'
+      ? 'Baguette: full degvolym. Rakt i kyl efter bulk.'
+      : 'Bröd: bulkvolym i bunke. Preshape + final proof gör resten.';
     $('heroBag').classList.toggle('active', mode === 'baguette');
     $('heroBrod').classList.toggle('active', mode === 'brod');
     calc();
