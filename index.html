@@ -462,16 +462,20 @@
   </div>
 
   <div class="card">
-    <div class="card-title">Önskad volym efter bulk</div>
+    <div class="card-title" id="volTitle">Önskad volym efter bulk</div>
+    <div class="dinkel-toggle" style="margin-bottom:14px;">
+      <button class="dinkel-btn active" data-imode="ml" type="button">Volym (ml)</button>
+      <button class="dinkel-btn" data-imode="g" type="button">Mjöl (g)</button>
+    </div>
     <div class="vol-stepper">
-      <button class="step-btn" id="volMinus" aria-label="Minska volym" type="button">−</button>
+      <button class="step-btn" id="volMinus" aria-label="Minska" type="button">−</button>
       <div class="vol-display">
         <input type="number" id="volume" value="2000" min="100" step="50" inputmode="numeric">
-        <span class="vol-unit">ml</span>
+        <span class="vol-unit" id="volUnit">ml</span>
       </div>
-      <button class="step-btn" id="volPlus" aria-label="Öka volym" type="button">+</button>
+      <button class="step-btn" id="volPlus" aria-label="Öka" type="button">+</button>
     </div>
-    <div class="vol-presets">
+    <div class="vol-presets" id="volPresets">
       <button class="preset-btn" data-vol="1000" type="button">1000</button>
       <button class="preset-btn" data-vol="1500" type="button">1500</button>
       <button class="preset-btn" data-vol="2000" type="button">2000</button>
@@ -549,11 +553,12 @@ const $ = id => document.getElementById(id);
 let mode = 'baguette';
 let dinkelPct = 20;
 let roundMode = false;
+let inputMode = 'ml';
 
 const SALT_PCT = 3;
 
 function calc() {
-  const V = +$('volume').value || 0;
+  const X = +$('volume').value || 0;
   const Tb = +$('bt').value;
   const Tk = +$('kt').value;
   const H = +$('h').value;
@@ -568,7 +573,7 @@ function calc() {
   const factor = mode === 'baguette' ? 2.0 : 1.7;
   const recipeFactor = 1 + H/100 + SALT_PCT/100;
 
-  const F_total = V / factor / recipeFactor;
+  const F_total = inputMode === 'ml' ? (X / factor / recipeFactor) : X;
   const W_total = (H/100) * F_total;
   const saltG   = (SALT_PCT/100) * F_total;
 
@@ -632,32 +637,62 @@ document.querySelectorAll('.dinkel-btn').forEach(btn => {
   });
 });
 
-const VOL_STEP = 50;
-const VOL_MIN = 100;
-const VOL_MAX = 10000;
+const MODES = {
+  ml: { step: 50,  min: 100, max: 10000, presets: [1000,1500,2000,2500,3000], def: 2000, unit: 'ml', title: 'Önskad volym efter bulk' },
+  g:  { step: 25,  min: 50,  max: 3000,  presets: [250,500,750,1000,1500],    def: 500,  unit: 'g',  title: 'Mjölmängd (totalt)' }
+};
+let lastVal = { ml: 2000, g: 500 };
+
+function renderPresets() {
+  const cfg = MODES[inputMode];
+  $('volPresets').innerHTML = cfg.presets
+    .map(v => `<button class="preset-btn" data-vol="${v}" type="button">${v}</button>`).join('');
+  document.querySelectorAll('#volPresets .preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => setVolume(+btn.dataset.vol));
+  });
+}
 
 function setVolume(v) {
-  v = Math.max(VOL_MIN, Math.min(VOL_MAX, Math.round(v / VOL_STEP) * VOL_STEP));
+  const cfg = MODES[inputMode];
+  v = Math.max(cfg.min, Math.min(cfg.max, Math.round(v / cfg.step) * cfg.step));
   $('volume').value = v;
-  document.querySelectorAll('.preset-btn').forEach(b => {
+  lastVal[inputMode] = v;
+  document.querySelectorAll('#volPresets .preset-btn').forEach(b => {
     b.classList.toggle('active', +b.dataset.vol === v);
   });
   calc();
 }
 
-$('volMinus').addEventListener('click', () => setVolume((+$('volume').value || 0) - VOL_STEP));
-$('volPlus').addEventListener('click', () => setVolume((+$('volume').value || 0) + VOL_STEP));
-$('volume').addEventListener('input', () => {
-  document.querySelectorAll('.preset-btn').forEach(b => {
-    b.classList.toggle('active', +b.dataset.vol === +$('volume').value);
+function applyInputMode() {
+  const cfg = MODES[inputMode];
+  $('volUnit').textContent = cfg.unit;
+  $('volTitle').textContent = cfg.title;
+  $('volume').step = cfg.step;
+  $('volume').min = cfg.min;
+  renderPresets();
+  setVolume(lastVal[inputMode]);
+}
+
+document.querySelectorAll('[data-imode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-imode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    inputMode = btn.dataset.imode;
+    applyInputMode();
   });
 });
-document.querySelectorAll('.preset-btn').forEach(btn => {
-  btn.addEventListener('click', () => setVolume(+btn.dataset.vol));
+
+$('volMinus').addEventListener('click', () => setVolume((+$('volume').value || 0) - MODES[inputMode].step));
+$('volPlus').addEventListener('click',  () => setVolume((+$('volume').value || 0) + MODES[inputMode].step));
+$('volume').addEventListener('input', () => {
+  lastVal[inputMode] = +$('volume').value;
+  document.querySelectorAll('#volPresets .preset-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.vol === +$('volume').value);
+  });
+  calc();
 });
 
-setVolume(+$('volume').value);
-calc();
+applyInputMode();
 </script>
 </body>
 </html>
