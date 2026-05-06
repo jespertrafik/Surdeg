@@ -564,33 +564,35 @@ let inputMode = 'ml';
 
 const SALT_PCT = 3;
 const DOUGH_DENSITY = 1.1;  // g/ml — typisk högvätskedeg före jäsning
+const RECIPE_FACTOR = 2.0;  // fast: ml-input = slutvolym vid full bulk (100% jäsning)
 
-// Källa till sanning för receptet:
-let state = { mainFlour: 500 };  // gram huvudmjöl (manitoba + dinkel)
+// Källa till sanning beror på inputMode:
+//   ml-läge: state.ml låst, mainFlour härleds från ml + nuvarande H/surdeg
+//   g-läge:  state.g (mainFlour) låst, ml härleds
+let state = { ml: 2000, g: 500 };
 
 function getParams() {
   const H = +$('h').value;
   const SURDEG_PCT = +$('sd').value;
   const bulkmal = +$('bulk').value;
-  const factor = 1 + bulkmal/100;
   const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
-  return { H, SURDEG_PCT, bulkmal, factor, doughPerX, D: dinkelPct };
+  return { H, SURDEG_PCT, bulkmal, doughPerX, D: dinkelPct };
 }
 
 function mlFromMainFlour(mainFlour) {
-  const { factor, doughPerX } = getParams();
-  return mainFlour * doughPerX / DOUGH_DENSITY * factor;
+  const { doughPerX } = getParams();
+  return mainFlour * doughPerX / DOUGH_DENSITY * RECIPE_FACTOR;
 }
 
 function mainFlourFromMl(ml) {
-  const { factor, doughPerX } = getParams();
-  return ml * DOUGH_DENSITY / factor / doughPerX;
+  const { doughPerX } = getParams();
+  return ml * DOUGH_DENSITY / RECIPE_FACTOR / doughPerX;
 }
 
 function calc() {
   const Tb = +$('bt').value;
   const Tk = +$('kt').value;
-  const { H, SURDEG_PCT, bulkmal, factor, doughPerX, D } = getParams();
+  const { H, SURDEG_PCT, bulkmal, doughPerX, D } = getParams();
 
   $('btVal').textContent = Tb + '°C';
   $('ktVal').textContent = Tk + '°C';
@@ -598,8 +600,10 @@ function calc() {
   $('sdVal').textContent = SURDEG_PCT + '%';
   $('bulkVal').textContent = bulkmal + '%';
 
-  // mainFlour är källan. ml-display = derived från mainFlour + nuvarande slider/H/surdeg.
-  const mainFlour = state.mainFlour;
+  // I ml-läge är slutvolym (state.ml) låst — recept räknas baklänges.
+  // I g-läge är mainFlour (state.g) låst — slutvolym härleds.
+  const mainFlour = inputMode === 'ml' ? mainFlourFromMl(state.ml) : state.g;
+  const factor = 1 + bulkmal/100;  // bara för "stoppvolym"-visning
 
   const surdegG      = (SURDEG_PCT/100) * mainFlour;
   const refFlourInLv = surdegG / 2;
@@ -629,15 +633,16 @@ function calc() {
   $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
-  const bulkVolMl = dough / DOUGH_DENSITY * factor;
-  $('bulkVol').textContent = r1(bulkVolMl);
+  // "Stoppvolym" — när degen ökat bulkmål% från start, då är bulken klar
+  const stopVolMl = dough / DOUGH_DENSITY * factor;
+  $('bulkVol').textContent = r1(stopVolMl);
 
-  // Sync input-fältet utan att trigga input-eventet
+  // Sync input-fältet (utan att trigga input-eventet)
   if (document.activeElement !== $('volume')) {
     if (inputMode === 'ml') {
-      $('volume').value = Math.round(bulkVolMl / 50) * 50;
+      $('volume').value = state.ml;  // låst, ändras inte av andra slidrar
     } else {
-      $('volume').value = r1(mainFlour);
+      $('volume').value = r1(state.g);
     }
   }
 }
@@ -694,7 +699,7 @@ function setVolume(v) {
   v = Math.max(cfg.min, Math.min(cfg.max, Math.round(v / cfg.step) * cfg.step));
   $('volume').value = v;
   lastVal[inputMode] = v;
-  state.mainFlour = inputMode === 'ml' ? mainFlourFromMl(v) : v;
+  state[inputMode] = v;
   document.querySelectorAll('#volPresets .preset-btn').forEach(b => {
     b.classList.toggle('active', +b.dataset.vol === v);
   });
@@ -725,7 +730,7 @@ $('volPlus').addEventListener('click',  () => setVolume((+$('volume').value || 0
 $('volume').addEventListener('input', () => {
   const v = +$('volume').value;
   lastVal[inputMode] = v;
-  state.mainFlour = inputMode === 'ml' ? mainFlourFromMl(v) : v;
+  state[inputMode] = v;
   document.querySelectorAll('#volPresets .preset-btn').forEach(b => {
     b.classList.toggle('active', +b.dataset.vol === v);
   });
