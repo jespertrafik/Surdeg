@@ -571,18 +571,24 @@ function calc() {
   $('sdVal').textContent = SURDEG_PCT + '%';
 
   const factor = mode === 'baguette' ? 2.0 : 1.7;
-  const recipeFactor = 1 + H/100 + SALT_PCT/100;
 
-  const F_total = inputMode === 'ml' ? (X / factor / recipeFactor) : X;
-  const W_total = (H/100) * F_total;
-  const saltG   = (SALT_PCT/100) * F_total;
+  // Convention: input = huvudmjöl (manitoba+dinkel). Surdegens mjöl räknas EJ in i huvudmjöl.
+  // Hydrering, surdeg%, salt%, dinkel% räknas alla på huvudmjöl.
+  // Hydrering tolkas dock som total vatten / totalt mjöl (huvudmjöl + surdegens mjöl).
+  // Degvikt = mainFlour + surdeg + waterAdded + salt
+  //        = X + SURDEG%·X + (H%·(X+SURDEG%·X/2) - SURDEG%·X/2) + SALT%·X
+  //        = X·[1 + SALT% + H% + SURDEG%·(1+H%)/2]
+  const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
+  const mainFlour = inputMode === 'ml' ? (X / factor / doughPerX) : X;
 
-  const surdegG     = (SURDEG_PCT/100) * F_total;
-  const refWaterInLv = surdegG / 2;
+  const surdegG      = (SURDEG_PCT/100) * mainFlour;
   const refFlourInLv = surdegG / 2;
+  const refWaterInLv = surdegG / 2;
+  const F_total      = mainFlour + refFlourInLv;
+  const W_total      = (H/100) * F_total;
+  const saltG        = (SALT_PCT/100) * mainFlour;
 
-  const dinkelG    = (D/100) * F_total;
-  const mainFlour  = F_total - refFlourInLv;
+  const dinkelG    = (D/100) * mainFlour;
   const manitobaG  = mainFlour - dinkelG;
   const waterAdded = W_total - refWaterInLv;
 
@@ -639,7 +645,7 @@ document.querySelectorAll('.dinkel-btn').forEach(btn => {
 
 const MODES = {
   ml: { step: 50,  min: 100, max: 10000, presets: [1000,1500,2000,2500,3000], def: 2000, unit: 'ml', title: 'Önskad volym efter bulk' },
-  g:  { step: 25,  min: 50,  max: 3000,  presets: [250,500,750,1000,1500],    def: 500,  unit: 'g',  title: 'Mjölmängd (totalt)' }
+  g:  { step: 25,  min: 50,  max: 3000,  presets: [250,500,750,1000,1500],    def: 500,  unit: 'g',  title: 'Huvudmjöl (manitoba + dinkel)' }
 };
 let lastVal = { ml: 2000, g: 500 };
 
