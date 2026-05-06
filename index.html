@@ -563,6 +563,7 @@ let roundMode = false;
 let inputMode = 'ml';
 
 const SALT_PCT = 3;
+const DOUGH_DENSITY = 1.1;  // g/ml — typisk högvätskedeg före jäsning
 
 function calc() {
   const X = +$('volume').value || 0;
@@ -588,9 +589,9 @@ function calc() {
   //        = X + SURDEG%·X + (H%·(X+SURDEG%·X/2) - SURDEG%·X/2) + SALT%·X
   //        = X·[1 + SALT% + H% + SURDEG%·(1+H%)/2]
   const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
-  // ml-läge: X = degvolym vid start (1g/ml). Bulkmål påverkar EJ recept,
-  // bara slutvolymen (bulkVol = dough × factor).
-  const mainFlour = inputMode === 'ml' ? (X / doughPerX) : X;
+  // ml-läge: X = degvolym vid start. Konverterar via densitet 1.1 g/ml.
+  // Bulkmål påverkar EJ recept, bara slutvolymen (bulkVol = startVol × factor).
+  const mainFlour = inputMode === 'ml' ? (X * DOUGH_DENSITY / doughPerX) : X;
 
   const surdegG      = (SURDEG_PCT/100) * mainFlour;
   const refFlourInLv = surdegG / 2;
@@ -620,7 +621,7 @@ function calc() {
   $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
-  $('bulkVol').textContent = r1(dough * factor);
+  $('bulkVol').textContent = r1(dough / DOUGH_DENSITY * factor);
 }
 
 document.querySelectorAll('.mode button').forEach(btn => {
