@@ -550,7 +550,7 @@
       <div class="total-amt" id="total">— g</div>
     </div>
     <div class="meta">
-      <div>Bulkmål <span id="factor">—</span>×</div>
+      <div>Bulkvolym <span id="bulkVol">—</span> ml (<span id="factor">—</span>×)</div>
     </div>
   </div>
 </div>
@@ -618,6 +618,7 @@ function calc() {
   $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
+  $('bulkVol').textContent = r1(dough * factor);
 }
 
 document.querySelectorAll('.mode button').forEach(btn => {
