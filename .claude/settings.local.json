@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Start-Process -Verb RunAs powershell -ArgumentList '-Command','shutdown /s /t 5')"
+    ]
+  }
+}

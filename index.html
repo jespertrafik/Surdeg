@@ -663,6 +663,38 @@ document.querySelectorAll('.mode button').forEach(btn => {
 
 ['bt','kt','h','sd','bulk'].forEach(id => $(id).addEventListener('input', calc));
 
+// Slidrar ska bara reagera när man drar i den röda knappen — inte vid klick på spåret.
+function thumbOnlyPointer(e) {
+  const r = e.currentTarget;
+  const rect = r.getBoundingClientRect();
+  const min = +r.min, max = +r.max, val = +r.value;
+  const ratio = (max > min) ? (val - min) / (max - min) : 0;
+  const thumbW = 22;
+  const thumbX = rect.left + thumbW / 2 + ratio * (rect.width - thumbW);
+  if (Math.abs(e.clientX - thumbX) > thumbW / 2) {
+    e.preventDefault();
+    e.stopPropagation();
+    r.blur();
+  }
+}
+['bt','kt','h','sd','bulk'].forEach(id => {
+  $(id).addEventListener('pointerdown', thumbOnlyPointer);
+  $(id).addEventListener('mousedown', thumbOnlyPointer);
+  $(id).addEventListener('touchstart', e => {
+    if (!e.touches[0]) return;
+    const r = e.currentTarget;
+    const rect = r.getBoundingClientRect();
+    const min = +r.min, max = +r.max, val = +r.value;
+    const ratio = (max > min) ? (val - min) / (max - min) : 0;
+    const thumbW = 22;
+    const thumbX = rect.left + thumbW / 2 + ratio * (rect.width - thumbW);
+    if (Math.abs(e.touches[0].clientX - thumbX) > thumbW / 2) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, { passive: false });
+});
+
 $('roundBtn').addEventListener('click', () => {
   roundMode = !roundMode;
   $('roundBtn').classList.toggle('active', roundMode);
