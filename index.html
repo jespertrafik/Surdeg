@@ -484,11 +484,9 @@
     <div class="field">
       <div class="field-head">
         <label>Dinkel fullkorn</label>
+        <span class="val" id="dinkelVal">20%</span>
       </div>
-      <div class="dinkel-toggle">
-        <button class="dinkel-btn" data-dinkel="10" type="button">10%</button>
-        <button class="dinkel-btn active" data-dinkel="20" type="button">20%</button>
-      </div>
+      <input type="range" id="dinkel" min="0" max="50" step="5" value="20">
     </div>
     <div class="note">Surdeg 20% · Salt 3% · surdeg hydrering 100%</div>
   </div>
@@ -532,7 +530,6 @@
 <script>
 const $ = id => document.getElementById(id);
 let mode = 'baguette';
-let dinkelPct = 20;
 let roundMode = false;
 let inputMode = 'ml';
 
@@ -553,10 +550,11 @@ let state = { ml: 2000, g: 500 };
 function getParams() {
   const H = +$('h').value;
   const bulkmal = +$('bulk').value;
+  const D = +$('dinkel').value;
   const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
   const factor = 1 + bulkmal/100;
   const density = doughDensity(H);
-  return { H, bulkmal, factor, doughPerX, density, D: dinkelPct };
+  return { H, bulkmal, factor, doughPerX, density, D };
 }
 
 function mlFromMainFlour(mainFlour) {
@@ -574,6 +572,7 @@ function calc() {
 
   $('hVal').textContent = H + '%';
   $('bulkVal').textContent = bulkmal + '%';
+  $('dinkelVal').textContent = D + '%';
 
   // I ml-läge är slutvolym (state.ml) låst — recept räknas baklänges.
   // I g-läge är mainFlour (state.g) låst — slutvolym härleds.
@@ -634,7 +633,7 @@ document.querySelectorAll('.mode button').forEach(btn => {
   });
 });
 
-['h','bulk'].forEach(id => $(id).addEventListener('input', calc));
+['h','bulk','dinkel'].forEach(id => $(id).addEventListener('input', calc));
 
 // Slidrar ska bara reagera när man drar i den röda knappen — inte vid klick på spåret.
 function thumbOnlyPointer(e) {
@@ -650,7 +649,7 @@ function thumbOnlyPointer(e) {
     r.blur();
   }
 }
-['h','bulk'].forEach(id => {
+['h','bulk','dinkel'].forEach(id => {
   $(id).addEventListener('pointerdown', thumbOnlyPointer);
   $(id).addEventListener('mousedown', thumbOnlyPointer);
   $(id).addEventListener('touchstart', e => {
@@ -673,15 +672,6 @@ $('roundBtn').addEventListener('click', () => {
   $('roundBtn').classList.toggle('active', roundMode);
   $('roundBtn').setAttribute('aria-pressed', roundMode);
   calc();
-});
-
-document.querySelectorAll('.dinkel-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.dinkel-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    dinkelPct = +btn.dataset.dinkel;
-    calc();
-  });
 });
 
 const MODES = {
