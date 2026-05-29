@@ -442,26 +442,6 @@
   </div>
 
   <div class="card">
-    <div class="card-title">Temperaturer</div>
-    <div class="row">
-      <div class="field">
-        <div class="field-head">
-          <label>Bulktemp</label>
-          <span class="val" id="btVal">22°C</span>
-        </div>
-        <input type="range" id="bt" min="18" max="26" step="1" value="22">
-      </div>
-      <div class="field">
-        <div class="field-head">
-          <label>Kyltemp</label>
-          <span class="val" id="ktVal">3°C</span>
-        </div>
-        <input type="range" id="kt" min="2" max="10" step="1" value="3">
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
     <div class="card-title" id="volTitle">Önskad volym efter bulk</div>
     <div class="dinkel-toggle" style="margin-bottom:14px;">
       <button class="dinkel-btn active" data-imode="ml" type="button">Volym (ml)</button>
@@ -496,13 +476,6 @@
     </div>
     <div class="field">
       <div class="field-head">
-        <label>Surdeg</label>
-        <span class="val" id="sdVal">20%</span>
-      </div>
-      <input type="range" id="sd" min="20" max="25" step="1" value="20">
-    </div>
-    <div class="field">
-      <div class="field-head">
         <label>Bulkmål (volymökning)</label>
         <span class="val" id="bulkVal">100%</span>
       </div>
@@ -517,7 +490,7 @@
         <button class="dinkel-btn active" data-dinkel="20" type="button">20%</button>
       </div>
     </div>
-    <div class="note">Salt 3% · surdeg hydrering 100%</div>
+    <div class="note">Surdeg 20% · Salt 3% · surdeg hydrering 100%</div>
   </div>
 
   <div class="recipe">
@@ -550,7 +523,7 @@
       <div class="total-amt" id="total">— g</div>
     </div>
     <div class="meta">
-      <div>Bulkvolym <span id="bulkVol">—</span> ml (<span id="factor">—</span>×)</div>
+      <div>Bulkmål <span id="factor">—</span>×</div>
     </div>
   </div>
 </div>
@@ -562,9 +535,9 @@ let dinkelPct = 20;
 let roundMode = false;
 let inputMode = 'ml';
 
+const SURDEG_PCT = 20;       // konstant — inte längre slider/temperaturberoende
 const SALT_PCT = 3;
 const DOUGH_DENSITY = 1.1;  // g/ml — typisk högvätskedeg före jäsning
-const RECIPE_FACTOR = 2.0;  // fast: ml-input = slutvolym vid full bulk (100% jäsning)
 
 // Källa till sanning beror på inputMode:
 //   ml-läge: state.ml låst, mainFlour härleds från ml + nuvarande H/surdeg
@@ -573,37 +546,31 @@ let state = { ml: 2000, g: 500 };
 
 function getParams() {
   const H = +$('h').value;
-  const SURDEG_PCT = +$('sd').value;
   const bulkmal = +$('bulk').value;
   const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
-  return { H, SURDEG_PCT, bulkmal, doughPerX, D: dinkelPct };
+  const factor = 1 + bulkmal/100;
+  return { H, bulkmal, factor, doughPerX, D: dinkelPct };
 }
 
 function mlFromMainFlour(mainFlour) {
-  const { doughPerX } = getParams();
-  return mainFlour * doughPerX / DOUGH_DENSITY * RECIPE_FACTOR;
+  const { doughPerX, factor } = getParams();
+  return mainFlour * doughPerX / DOUGH_DENSITY * factor;
 }
 
 function mainFlourFromMl(ml) {
-  const { doughPerX } = getParams();
-  return ml * DOUGH_DENSITY / RECIPE_FACTOR / doughPerX;
+  const { doughPerX, factor } = getParams();
+  return ml * DOUGH_DENSITY / factor / doughPerX;
 }
 
 function calc() {
-  const Tb = +$('bt').value;
-  const Tk = +$('kt').value;
-  const { H, SURDEG_PCT, bulkmal, doughPerX, D } = getParams();
+  const { H, bulkmal, factor, doughPerX, D } = getParams();
 
-  $('btVal').textContent = Tb + '°C';
-  $('ktVal').textContent = Tk + '°C';
   $('hVal').textContent = H + '%';
-  $('sdVal').textContent = SURDEG_PCT + '%';
   $('bulkVal').textContent = bulkmal + '%';
 
   // I ml-läge är slutvolym (state.ml) låst — recept räknas baklänges.
   // I g-läge är mainFlour (state.g) låst — slutvolym härleds.
   const mainFlour = inputMode === 'ml' ? mainFlourFromMl(state.ml) : state.g;
-  const factor = 1 + bulkmal/100;  // bara för "stoppvolym"-visning
 
   const surdegG      = (SURDEG_PCT/100) * mainFlour;
   const refFlourInLv = surdegG / 2;
@@ -633,9 +600,6 @@ function calc() {
   $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
-  // "Stoppvolym" — när degen ökat bulkmål% från start, då är bulken klar
-  const stopVolMl = dough / DOUGH_DENSITY * factor;
-  $('bulkVol').textContent = r1(stopVolMl);
 
   // Sync input-fältet (utan att trigga input-eventet)
   if (document.activeElement !== $('volume')) {
@@ -661,7 +625,7 @@ document.querySelectorAll('.mode button').forEach(btn => {
   });
 });
 
-['bt','kt','h','sd','bulk'].forEach(id => $(id).addEventListener('input', calc));
+['h','bulk'].forEach(id => $(id).addEventListener('input', calc));
 
 // Slidrar ska bara reagera när man drar i den röda knappen — inte vid klick på spåret.
 function thumbOnlyPointer(e) {
@@ -677,7 +641,7 @@ function thumbOnlyPointer(e) {
     r.blur();
   }
 }
-['bt','kt','h','sd','bulk'].forEach(id => {
+['h','bulk'].forEach(id => {
   $(id).addEventListener('pointerdown', thumbOnlyPointer);
   $(id).addEventListener('mousedown', thumbOnlyPointer);
   $(id).addEventListener('touchstart', e => {
