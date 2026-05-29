@@ -523,6 +523,7 @@
       <div class="total-amt" id="total">— g</div>
     </div>
     <div class="meta">
+      <div>Jäs till <span id="proofVol">—</span> ml</div>
       <div>Bulkmål <span id="factor">—</span>×</div>
     </div>
   </div>
@@ -569,7 +570,7 @@ function mainFlourFromMl(ml) {
 }
 
 function calc() {
-  const { H, bulkmal, factor, doughPerX, D } = getParams();
+  const { H, bulkmal, factor, doughPerX, density, D } = getParams();
 
   $('hVal').textContent = H + '%';
   $('bulkVal').textContent = bulkmal + '%';
@@ -606,6 +607,8 @@ function calc() {
   $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
+  // Volym degen ska nå när vald jäsgrad är klar = startvolym × faktor
+  $('proofVol').textContent = r1(mainFlour * doughPerX / density * factor);
 
   // Sync input-fältet (utan att trigga input-eventet)
   if (document.activeElement !== $('volume')) {
