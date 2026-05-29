@@ -537,7 +537,12 @@ let inputMode = 'ml';
 
 const SURDEG_PCT = 20;       // konstant — inte längre slider/temperaturberoende
 const SALT_PCT = 3;
-const DOUGH_DENSITY = 1.25;  // g/ml — färsk deg före jäsning (0.8 ml/g, verifierat mot 440g→352ml)
+
+// Färsk degs densitet (g/ml) ur ingrediensernas densiteter: mjöl 1.45, vatten 1.0, salt 2.16.
+// Viktat per 100 g mjöl → vatten = H, salt = SALT_PCT. Ger ~1.22 över 70–85% hydrering.
+function doughDensity(H) {
+  return (100 + H + SALT_PCT) / (100/1.45 + H/1.0 + SALT_PCT/2.16);
+}
 
 // Källa till sanning beror på inputMode:
 //   ml-läge: state.ml låst, mainFlour härleds från ml + nuvarande H/surdeg
@@ -549,17 +554,18 @@ function getParams() {
   const bulkmal = +$('bulk').value;
   const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
   const factor = 1 + bulkmal/100;
-  return { H, bulkmal, factor, doughPerX, D: dinkelPct };
+  const density = doughDensity(H);
+  return { H, bulkmal, factor, doughPerX, density, D: dinkelPct };
 }
 
 function mlFromMainFlour(mainFlour) {
-  const { doughPerX, factor } = getParams();
-  return mainFlour * doughPerX / DOUGH_DENSITY * factor;
+  const { doughPerX, factor, density } = getParams();
+  return mainFlour * doughPerX / density * factor;
 }
 
 function mainFlourFromMl(ml) {
-  const { doughPerX, factor } = getParams();
-  return ml * DOUGH_DENSITY / factor / doughPerX;
+  const { doughPerX, factor, density } = getParams();
+  return ml * density / factor / doughPerX;
 }
 
 function calc() {
