@@ -459,7 +459,7 @@
         <input type="range" id="kt" min="2" max="10" step="1" value="3">
       </div>
     </div>
-    <div class="note" id="tempNote">Bulktemp styr surdegsmängden. Kyltemp drar ner bulkmålet (bara baguette).</div>
+    <div class="note" id="tempNote">Bulktemp styr surdegsmängden. Kyltemp drar ner bulkmålet — svagare för bröd, formade limpor kyls fortare.</div>
   </div>
 
   <div class="card">
@@ -595,10 +595,12 @@ function getParams() {
   const D = +$('dinkel').value;
   const density = doughDensity(H);
 
-  // Bulkmålet: slidern är basen. Kyltemp drar ner den — men bara för baguette,
-  // eftersom bara baguetten går rakt i kyl och jäser vidare där medan den kyls.
-  let factor = 1 + bulkmal/100;
-  if (mode === 'baguette') factor -= (Tk - 3) * 0.04;
+  // Bulkmålet: slidern är basen, kyltemp drar ner den — allt kalljäser.
+  // Baguette går i kyl som hel degklump: långsam genomkylning, mycket
+  // eftersläpande jäsning. Bröd går in som formade limpor med större yta per
+  // volym → genomkylt snabbare → mindre att kompensera för.
+  const KYL_KOEFF = mode === 'baguette' ? 0.04 : 0.025;
+  let factor = 1 + bulkmal/100 - (Tk - 3) * KYL_KOEFF;
   factor = Math.max(1.4, Math.min(2.2, factor));
 
   // Ungefärlig degvikt för storleksjusteringen — ingen cirkelberoende av surdeg%.
