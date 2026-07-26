@@ -442,6 +442,27 @@
   </div>
 
   <div class="card">
+    <div class="card-title">Temperaturer</div>
+    <div class="row">
+      <div class="field">
+        <div class="field-head">
+          <label>Bulktemp</label>
+          <span class="val" id="btVal">22°C</span>
+        </div>
+        <input type="range" id="bt" min="18" max="26" step="1" value="22">
+      </div>
+      <div class="field">
+        <div class="field-head">
+          <label>Kyltemp</label>
+          <span class="val" id="ktVal">3°C</span>
+        </div>
+        <input type="range" id="kt" min="2" max="10" step="1" value="3">
+      </div>
+    </div>
+    <div class="note" id="tempNote">Bulktemp styr surdegsmängden. Kyltemp drar ner bulkmålet (bara baguette).</div>
+  </div>
+
+  <div class="card">
     <div class="card-title" id="volTitle">Önskad volym efter bulk</div>
     <div class="dinkel-toggle" style="margin-bottom:14px;">
       <button class="dinkel-btn active" data-imode="ml" type="button">Volym (ml)</button>
@@ -488,7 +509,7 @@
       </div>
       <input type="range" id="dinkel" min="0" max="50" step="5" value="20">
     </div>
-    <div class="note">Surdeg 20% · Salt 3% · surdeg hydrering 100%</div>
+    <div class="note">Surdeg räknas ur bulktemp · Salt 3% · surdeg hydrering 100%</div>
   </div>
 
   <div class="recipe">
@@ -522,7 +543,7 @@
     </div>
     <div class="meta">
       <div>Jäs till <span id="proofVol">—</span> ml</div>
-      <div>Bulkmål <span id="factor">—</span>×</div>
+      <div>Bulkmål <span id="factor">—</span>× · surdeg <span id="lvPct">—</span>%</div>
     </div>
   </div>
 </div>
@@ -533,8 +554,27 @@ let mode = 'baguette';
 let roundMode = false;
 let inputMode = 'ml';
 
-const SURDEG_PCT = 20;       // konstant — inte längre slider/temperaturberoende
 const SALT_PCT = 3;
+const SURDEG_REF = 20;       // % vid referenstemp 22°C
+const TEMP_REF = 22;
+const Q10 = 2.5;             // jäsningen går ~2.5x fortare per +10°C
+
+// Stor degmassa värmer sig själv av jäsningen och kyls långsammare → mindre surdeg.
+function sizeAdjustment(weight) {
+  if (weight < 800) return 0;
+  if (weight < 1500) return 0.5;
+  if (weight < 2500) return 1.0;
+  return 1.5;
+}
+
+// Rate-neutral: mindre surdeg i varmt kök så bulken tar lika lång tid oavsett temp.
+// Multiplikativt, inte linjärt — jäsningen är exponentiell i temperaturen.
+// Behöver inte vara exakt; volymmålet är det som avgör när degen är klar.
+function computeSurdeg(bulktemp, doughWeight) {
+  const p = SURDEG_REF * Math.pow(Q10, -(bulktemp - TEMP_REF) / 10)
+          - sizeAdjustment(doughWeight);
+  return Math.round(Math.max(12, Math.min(28, p)));
+}
 
 // Färsk degs densitet (g/ml) ur ingrediensernas densiteter: mjöl 1.45, vatten 1.0, salt 2.16.
 // Viktat per 100 g mjöl → vatten = H, salt = SALT_PCT. Ger ~1.22 över 70–85% hydrering.
@@ -549,12 +589,26 @@ let state = { ml: 2000, g: 500 };
 
 function getParams() {
   const H = +$('h').value;
+  const Tb = +$('bt').value;
+  const Tk = +$('kt').value;
   const bulkmal = +$('bulk').value;
   const D = +$('dinkel').value;
-  const doughPerX = 1 + SALT_PCT/100 + H/100 + (SURDEG_PCT/100) * (1 + H/100) / 2;
-  const factor = 1 + bulkmal/100;
   const density = doughDensity(H);
-  return { H, bulkmal, factor, doughPerX, density, D };
+
+  // Bulkmålet: slidern är basen. Kyltemp drar ner den — men bara för baguette,
+  // eftersom bara baguetten går rakt i kyl och jäser vidare där medan den kyls.
+  let factor = 1 + bulkmal/100;
+  if (mode === 'baguette') factor -= (Tk - 3) * 0.04;
+  factor = Math.max(1.4, Math.min(2.2, factor));
+
+  // Ungefärlig degvikt för storleksjusteringen — ingen cirkelberoende av surdeg%.
+  const doughEst = inputMode === 'ml'
+    ? state.ml * density / factor
+    : state.g * (1 + SALT_PCT/100 + H/100 + (SURDEG_REF/100) * (1 + H/100) / 2);
+
+  const surdegPct = computeSurdeg(Tb, doughEst);
+  const doughPerX = 1 + SALT_PCT/100 + H/100 + (surdegPct/100) * (1 + H/100) / 2;
+  return { H, Tb, Tk, bulkmal, factor, doughPerX, density, D, surdegPct };
 }
 
 function mlFromMainFlour(mainFlour) {
@@ -568,8 +622,10 @@ function mainFlourFromMl(ml) {
 }
 
 function calc() {
-  const { H, bulkmal, factor, doughPerX, density, D } = getParams();
+  const { H, Tb, Tk, bulkmal, factor, doughPerX, density, D, surdegPct } = getParams();
 
+  $('btVal').textContent = Tb + '°C';
+  $('ktVal').textContent = Tk + '°C';
   $('hVal').textContent = H + '%';
   $('bulkVal').textContent = bulkmal + '%';
   $('dinkelVal').textContent = D + '%';
@@ -578,7 +634,7 @@ function calc() {
   // I g-läge är mainFlour (state.g) låst — slutvolym härleds.
   const mainFlour = inputMode === 'ml' ? mainFlourFromMl(state.ml) : state.g;
 
-  const surdegG      = (SURDEG_PCT/100) * mainFlour;
+  const surdegG      = (surdegPct/100) * mainFlour;
   const refFlourInLv = surdegG / 2;
   const refWaterInLv = surdegG / 2;
   const F_total      = mainFlour + refFlourInLv;
@@ -606,6 +662,7 @@ function calc() {
   $('sAmt').innerHTML     = (roundMode ? salD : salD.toFixed(1)) + ' <span>g</span>';
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
+  $('lvPct').textContent  = surdegPct;
   // Volym degen ska nå när vald jäsgrad är klar = startvolym × faktor
   $('proofVol').textContent = r1(mainFlour * doughPerX / density * factor);
 
@@ -624,6 +681,9 @@ document.querySelectorAll('.mode button').forEach(btn => {
     document.querySelectorAll('.mode button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     mode = btn.dataset.mode;
+    // Bröd stoppas tidigare i bulken — preshape + final proof jäser vidare.
+    // Baguette går rakt i kyl, så bulken måste vara färdig.
+    $('bulk').value = mode === 'baguette' ? 100 : 70;
     $('volNote').textContent = mode === 'baguette'
       ? 'Baguette: full degvolym. Rakt i kyl efter bulk.'
       : 'Bröd: bulkvolym i bunke. Preshape + final proof gör resten.';
@@ -633,7 +693,7 @@ document.querySelectorAll('.mode button').forEach(btn => {
   });
 });
 
-['h','bulk','dinkel'].forEach(id => $(id).addEventListener('input', calc));
+['bt','kt','h','bulk','dinkel'].forEach(id => $(id).addEventListener('input', calc));
 
 // Slidrar ska bara reagera när man drar i den röda knappen — inte vid klick på spåret.
 function thumbOnlyPointer(e) {
@@ -649,7 +709,7 @@ function thumbOnlyPointer(e) {
     r.blur();
   }
 }
-['h','bulk','dinkel'].forEach(id => {
+['bt','kt','h','bulk','dinkel'].forEach(id => {
   $(id).addEventListener('pointerdown', thumbOnlyPointer);
   $(id).addEventListener('mousedown', thumbOnlyPointer);
   $(id).addEventListener('touchstart', e => {
