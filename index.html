@@ -597,10 +597,16 @@ function computeSurdeg(bulktemp, kyltemp, doughWeight) {
   return Math.round(Math.max(12, Math.min(28, p)));
 }
 
-// Färsk degs densitet (g/ml) ur ingrediensernas densiteter: mjöl 1.45, vatten 1.0, salt 2.16.
-// Viktat per 100 g mjöl → vatten = H, salt = SALT_PCT. Ger ~1.22 över 70–85% hydrering.
+// Färsk degs densitet (g/ml). Formen kommer ur ingrediensernas densiteter
+// (mjöl 1.45, vatten 1.0, salt 2.16) viktat per 100 g mjöl, så att blötare deg
+// blir lättare — men den råa formeln ger 1.217 vid 80% hydrering medan mätningen
+// gav 1.25 (440 g deg i 352 ml, a46fac9). Formeln antar att volymerna är
+// additiva och använder mjölets partikeldensitet; verklig deg packar sig hårdare.
+// KALIBRERING skalar därför kurvan så den träffar mätpunkten exakt vid H=80.
+const DENSITY_KALIBRERING = 1.25 / 1.2171;   // = 1.027
 function doughDensity(H) {
-  return (100 + H + SALT_PCT) / (100/1.45 + H/1.0 + SALT_PCT/2.16);
+  const ideal = (100 + H + SALT_PCT) / (100/1.45 + H/1.0 + SALT_PCT/2.16);
+  return ideal * DENSITY_KALIBRERING;
 }
 
 // Källa till sanning beror på inputMode:
