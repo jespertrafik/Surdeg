@@ -456,10 +456,10 @@
           <label>Kyltemp</label>
           <span class="val" id="ktVal">3°C</span>
         </div>
-        <input type="range" id="kt" min="2" max="10" step="1" value="3">
+        <input type="range" id="kt" min="2" max="8" step="1" value="4">
       </div>
     </div>
-    <div class="note" id="tempNote">Bulktemp styr surdegsmängden. Kyltemp drar ner bulkmålet — svagare för bröd, formade limpor kyls fortare.</div>
+    <div class="note" id="tempNote">Båda styr surdegsmängden — bulktemp mest. Ligger kylen över 6°C får du kompensera själv.</div>
   </div>
 
   <div class="card">
@@ -557,6 +557,7 @@ let inputMode = 'ml';
 const SALT_PCT = 3;
 const SURDEG_REF = 20;       // % vid referenstemp 22°C
 const TEMP_REF = 22;
+const KYL_REF = 4;           // en ok kyl — ingen justering här
 const Q10 = 2.5;             // jäsningen går ~2.5x fortare per +10°C
 
 // Stor degmassa värmer sig själv av jäsningen och kyls långsammare → mindre surdeg.
@@ -567,11 +568,15 @@ function sizeAdjustment(weight) {
   return 1.5;
 }
 
-// Rate-neutral: mindre surdeg i varmt kök så bulken tar lika lång tid oavsett temp.
-// Multiplikativt, inte linjärt — jäsningen är exponentiell i temperaturen.
-// Behöver inte vara exakt; volymmålet är det som avgör när degen är klar.
-function computeSurdeg(bulktemp, doughWeight) {
+// Bulktemp: rate-neutralt, mindre surdeg i varmt kök så bulken tar lika lång
+// tid oavsett temp. Multiplikativt — jäsningen är exponentiell i temperaturen.
+// Kyltemp: mild linjär justering från 4°C, som antas vara en ok kyl. Degen
+// jäser vidare i kylen och en varmare kyl kräver långsammare deg. Medvetet
+// försiktig — appen förutsätter en fungerande kyl och försöker inte rädda
+// en som ligger på 8°C. Behöver inte vara exakt; kanten på hinken avgör.
+function computeSurdeg(bulktemp, kyltemp, doughWeight) {
   const p = SURDEG_REF * Math.pow(Q10, -(bulktemp - TEMP_REF) / 10)
+          - (kyltemp - KYL_REF) * 0.5
           - sizeAdjustment(doughWeight);
   return Math.round(Math.max(12, Math.min(28, p)));
 }
@@ -595,20 +600,17 @@ function getParams() {
   const D = +$('dinkel').value;
   const density = doughDensity(H);
 
-  // Bulkmålet: slidern är basen, kyltemp drar ner den — allt kalljäser.
-  // Baguette går i kyl som hel degklump: långsam genomkylning, mycket
-  // eftersläpande jäsning. Bröd går in som formade limpor med större yta per
-  // volym → genomkylt snabbare → mindre att kompensera för.
-  const KYL_KOEFF = mode === 'baguette' ? 0.04 : 0.025;
-  let factor = 1 + bulkmal/100 - (Tk - 3) * KYL_KOEFF;
-  factor = Math.max(1.4, Math.min(2.2, factor));
+  // Bulkmålet är låst av kärlet: kanten på hinken ÄR stoppsignalen, och den
+  // sitter där den sitter. Kyltemp kan alltså inte dra ner målet — den får
+  // sänka surdegen istället, så att allt går långsammare inklusive natten.
+  const factor = 1 + bulkmal/100;
 
   // Ungefärlig degvikt för storleksjusteringen — ingen cirkelberoende av surdeg%.
   const doughEst = inputMode === 'ml'
     ? state.ml * density / factor
     : state.g * (1 + SALT_PCT/100 + H/100 + (SURDEG_REF/100) * (1 + H/100) / 2);
 
-  const surdegPct = computeSurdeg(Tb, doughEst);
+  const surdegPct = computeSurdeg(Tb, Tk, doughEst);
   const doughPerX = 1 + SALT_PCT/100 + H/100 + (surdegPct/100) * (1 + H/100) / 2;
   return { H, Tb, Tk, bulkmal, factor, doughPerX, density, D, surdegPct };
 }
