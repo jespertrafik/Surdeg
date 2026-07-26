@@ -411,6 +411,21 @@
   }
   .meta span { color: var(--crust); font-weight: 600; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .warn {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--accent);
+    border-left-width: 3px;
+    border-radius: 4px;
+    background: rgba(168,66,31,0.07);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    line-height: 1.75;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+  }
+  .warn b { font-weight: 600; }
+  .warn[hidden] { display: none; }
   .note {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
@@ -459,7 +474,8 @@
         <input type="range" id="kt" min="2" max="8" step="1" value="4">
       </div>
     </div>
-    <div class="note" id="tempNote">Båda styr surdegsmängden — bulktemp mest. Ligger kylen över 6°C får du kompensera själv.</div>
+    <div class="note" id="tempNote">Båda styr surdegsmängden — bulktemp mest. Appen räknar med en kyl på 4°C.</div>
+    <div class="warn" id="kylWarn" hidden></div>
   </div>
 
   <div class="card">
@@ -667,6 +683,27 @@ function calc() {
   $('total').textContent  = r1(dough) + ' g';
   $('factor').textContent = factor.toFixed(2);
   $('lvPct').textContent  = surdegPct;
+
+  // Kanten på hinken förutsätter att natten i kylen jäser lagom mycket. Över
+  // 5°C stämmer inte det längre, och surdegsjusteringen räcker inte — då måste
+  // du stanna under kanten, och det kan appen inte visa åt dig.
+  const kylWarn = $('kylWarn');
+  if (Tk >= 6) {
+    const merJasning = Math.round((Math.pow(Q10, (Tk - 4) / 10) - 1) * 100);
+    const stopp = r1(mainFlour * doughPerX / density * factor * (1 - merJasning / 300));
+    kylWarn.hidden = false;
+    kylWarn.innerHTML =
+      `Kylen är för varm. Degen jäser <b>~${merJasning}% mer</b> över natten än ` +
+      `appen räknar med, och går över kanten. Stanna bulken lägre — ` +
+      `runt <b>${stopp} ml</b> i stället för kanten.`;
+  } else if (Tk === 5) {
+    kylWarn.hidden = false;
+    kylWarn.innerHTML =
+      'Kylen är i övre kanten. Håll koll första gången — går degen över kanten ' +
+      'på natten så stanna lite tidigare nästa gång.';
+  } else {
+    kylWarn.hidden = true;
+  }
   // Volym degen ska nå när vald jäsgrad är klar = startvolym × faktor
   $('proofVol').textContent = r1(mainFlour * doughPerX / density * factor);
 
