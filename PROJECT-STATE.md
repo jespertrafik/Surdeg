@@ -79,5 +79,18 @@ Ingen bygg, inga beroenden, inget ramverk. Repot flyttat till
   öppnar i köket på mobilen.
 - Inget sparas — hydrering, dinkel och volym nollställs vid varje besök.
 - `state` och `lastVal` är samma sak, uppdateras identiskt på tre ställen.
-- Degdensitetsformeln ger 1.217 g/ml vid H=80 medan mätningen i a46fac9 gav
-  1.25 (440 g deg i 352 ml). ~2.6% avvikelse.
+
+Åtgärdat 2026-07-26: degdensiteten kalibrerad mot mätningen, se nedan.
+
+## Degdensitet — den enda mätta siffran i modellen
+
+`doughDensity(H)` skalas med `DENSITY_KALIBRERING = 1.25/1.2171` så den ger
+exakt 1.25 g/ml vid 80% hydrering. Det är Jespers mätning: 440 g deg i 352 ml.
+
+Den råa ingrediensformeln underskattar med 2.6% eftersom den antar additiva
+volymer och mjölets partikeldensitet 1.45. Kurvans form behålls — blötare deg
+är verkligen lättare — men nivån kommer från mätningen.
+
+Commit 6fd8197 hade ersatt mätningen med den råa formeln och kallade 1.25 för
+"det tidigare gissade fasta 1.25". Fel: 1.25 var mätt i a46fac9, det var 1.1
+och 1:1 som var gissningar. Rör inte konstanten utan en ny mätning.
